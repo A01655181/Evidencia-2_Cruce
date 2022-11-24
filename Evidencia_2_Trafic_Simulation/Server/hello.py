@@ -3,7 +3,7 @@ import json, logging, os, atexit
 import simul
 
 app = Flask(__name__, static_url_path='')
-model = simul.Model(10, 14, 1, 1, 1, 0)
+model = simul.Model(10, 20, 1, 1, 1, 0)
 
 # On IBM Cloud Cloud Foundry, get the port number from the environment variable PORT
 # When running this app on the local machine, default the port to 8000

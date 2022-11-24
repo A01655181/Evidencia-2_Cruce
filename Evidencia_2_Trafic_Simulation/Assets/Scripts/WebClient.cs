@@ -8,13 +8,13 @@ using UnityEngine.Networking;
 [Serializable]
 public struct CarInfo
 {
-    public int[] pos;
+    public float[] pos;
     public string name;
 }
 [Serializable]
 public struct TrafficLights
 {
-    public int[] pos;
+    public float[] pos;
     public string status;
 }
 [Serializable]
@@ -26,23 +26,18 @@ struct Step
 
 public class WebClient : MonoBehaviour
 {
-    List<List<Vector3>> positions;
     public GameObject[] cars;
     public GameObject[] tfs;
-    public float timeToUpdate = 5.0f;
-    private float timer;
-    public float dt;
-    int numPositions;
-    int currPosition;
+
     Step step;
     bool firstStep = true;
     bool received = false;
     float chrono = 0.0f;
-    Vector3[] prevPositions;
     Vector3[] moveVects;
+    public float scale = 2.0f;
 
     // IEnumerator - yield return
-    IEnumerator SendData(string data)
+    IEnumerator SendData()
     {
         WWWForm form = new WWWForm();
         form.AddField("bundle", "the data");
@@ -73,9 +68,9 @@ public class WebClient : MonoBehaviour
                     moveVects = new Vector3[cars.Length];
                     for (int i = 0; i < cars.Length; i++)
                     {
-                        Vector3 goal = new Vector3(step.cars[i].pos[0], 0.5f, step.cars[i].pos[1]);
+                        Vector3 goal = new Vector3(step.cars[i].pos[0] * scale, 0.5f, step.cars[i].pos[1] * scale);
                         Vector3 displacement = goal - cars[i].transform.position;
-                        if (displacement.magnitude > 3.0f)
+                        if (displacement.magnitude > 3.0f * scale)
                         {
                             displacement.Normalize();
                             cars[i].transform.position = goal + displacement * 3;
@@ -93,11 +88,7 @@ public class WebClient : MonoBehaviour
     async void Start()
     {
         #if UNITY_EDITOR
-        Vector3 fakePos = new Vector3(3.44f, 0, -15.707f);
-        string json = EditorJsonUtility.ToJson(fakePos);
-        //StartCoroutine(SendData(call));
-        StartCoroutine(SendData(json));
-        timer = timeToUpdate;
+        StartCoroutine(SendData());
         #endif
     }
 
@@ -109,45 +100,72 @@ public class WebClient : MonoBehaviour
             if (received)
             {
                 firstStep = false;
+                for (int i = 0; i < tfs.Length; i++)
+                {
+                    Vector3 pos = new Vector3(step.tf[i].pos[0] * scale, 2.5f, step.tf[i].pos[1] * scale);
+                    tfs[i].transform.position = pos;
+                    if (step.tf[i].status == "red")
+                    {
+                        tfs[i].GetComponent<MeshRenderer>().material.SetColor("_Color", Color.red);
+                    }
+                    else if (step.tf[i].status == "yellow")
+                    {
+                        tfs[i].GetComponent<MeshRenderer>().material.SetColor("_Color", Color.yellow);
+                    }
+                    else if (step.tf[i].status == "green")
+                    {
+                        tfs[i].GetComponent<MeshRenderer>().material.SetColor("_Color", Color.green);
+                    }
+                }
                 for (int i = 0; i < cars.Length; i++)
                 {
-                    Vector3 pos = new Vector3(step.cars[i].pos[0], 0.5f, step.cars[i].pos[1]);
+                    Vector3 pos = new Vector3(step.cars[i].pos[0] * scale, 0.5f, step.cars[i].pos[1] * scale);
                     cars[i].transform.position = pos;
                 }
                 #if UNITY_EDITOR
-                timer = timeToUpdate; // reset the timer
-                Vector3 fakePos = new Vector3(3.44f, 0, -15.707f);
-                string json = EditorJsonUtility.ToJson(fakePos);
-                StartCoroutine(SendData(json));
+                StartCoroutine(SendData());
                 #endif
             }
             return;
         }
-
         if (received)
         {
             // Debug.Log("Chrono: " + chrono);
+            chrono += Time.deltaTime;
             double diff = 0.0f;
             for (int i = 0; i < cars.Length; i++)
             {
                 cars[i].transform.position += moveVects[i] * Time.deltaTime;
-                diff += (new Vector3(step.cars[i].pos[0], 0.5f, step.cars[i].pos[1]) - cars[i].transform.position).magnitude;
+                diff += (new Vector3(step.cars[i].pos[0] * scale, 0.5f, step.cars[i].pos[1] * scale) - cars[i].transform.position).magnitude;
             }
             diff = diff / cars.Length;
-            if (diff < 0.015)
+            if (chrono > 1.0f)
             {
                 received = false;
+                for (int i = 0; i < tfs.Length; i++)
+                {
+                    if (step.tf[i].status == "red")
+                    {
+                        tfs[i].GetComponent<MeshRenderer>().material.SetColor("_Color", Color.red);
+                    }
+                    else if (step.tf[i].status == "yellow")
+                    {
+                        tfs[i].GetComponent<MeshRenderer>().material.SetColor("_Color", Color.yellow);
+                    }
+                    else if (step.tf[i].status == "green")
+                    {
+                        tfs[i].GetComponent<MeshRenderer>().material.SetColor("_Color", Color.green);
+                    }
+                }
                 for (int i = 0; i < cars.Length; i++)
                 {
-                    Vector3 pos = new Vector3(step.cars[i].pos[0], 0.5f, step.cars[i].pos[1]);
+                    Vector3 pos = new Vector3(step.cars[i].pos[0] * scale, 0.5f, step.cars[i].pos[1] * scale);
                     cars[i].transform.position = pos;
                 }
                 #if UNITY_EDITOR
-                timer = timeToUpdate; // reset the timer
-                Vector3 fakePos = new Vector3(3.44f, 0, -15.707f);
-                string json = EditorJsonUtility.ToJson(fakePos);
-                StartCoroutine(SendData(json));
+                StartCoroutine(SendData());
                 #endif
+                chrono = 0.0f;
             }
         }
     }
