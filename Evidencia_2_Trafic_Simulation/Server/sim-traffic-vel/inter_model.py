@@ -91,7 +91,8 @@ def move(agent):
         if aux < min_val:
             best = new_point
             min_val = aux
-    agent.model.grid.move_agent(agent, tuple(e for e in best))
+    if (len(best) > 1):
+        agent.model.grid.move_agent(agent, tuple(e for e in best))
 
 
 # Some useful methods that are not dependent of an agent
@@ -159,7 +160,10 @@ class Ambulance(mesa.Agent):
         curr_pos = [des_x, des_y]
 
         if curr_pos == self.final_des:
-            self.model.kill_agents.append(self)
+            self.model.vh_scheduler.remove(self)
+            self.model.grid.remove_agent(self)
+            self.model.curr_cars -= 1
+            # self.model.kill_agents.append(self)
             return
         else:
             move(self)
@@ -186,7 +190,10 @@ class Car(mesa.Agent):
         curr_pos = [des_x, des_y]
 
         if curr_pos == self.final_des:
-            self.model.kill_agents.append(self)
+            self.model.vh_scheduler.remove(self)
+            self.model.grid.remove_agent(self)
+            self.model.curr_cars -= 1
+            # self.model.kill_agents.append(self)
             return
         else:
             move(self)
@@ -202,7 +209,7 @@ class IntersectionModel(mesa.Model):
 
         self.kill_agents = [] # agents to kill after each step
 
-        self.grid = mesa.space.MultiGrid(50, 50, False) # create the space of a width and height room_width, room_height and no torodoidal
+        self.grid = mesa.space.MultiGrid(50, 50, True) # create the space of a width and height room_width, room_height and no torodoidal
 
         # Creating different schedulers
         self.tl_scheduler = mesa.time.RandomActivation(self) # scheduler for steps
@@ -902,4 +909,4 @@ class IntersectionModel(mesa.Model):
         #         print(self.kill_agents)
         #         print("An error happened")
 
-            self.curr_cars -= 1
+        #     self.curr_cars -= 1
