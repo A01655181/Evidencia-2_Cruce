@@ -159,6 +159,15 @@ public class WebClient : MonoBehaviour
                 {
                     Vector3 pos = new Vector3(step.cars[i].pos[0] * scale, 0.5f, step.cars[i].pos[1] * scale);
                     cars[i].transform.position = pos;
+                    if(cars[i].name=="JeepM" || cars[i].name=="Jeep1M"|| cars[i].name=="Bike (1)" || cars[i].name=="Car2M"){
+                        cars[i].transform.localRotation = Quaternion.Euler(new Vector3(0,270,0));
+                    }else if(cars[i].name=="Bike" || cars[i].name=="Speeder (1)" ){
+                        cars[i].transform.localRotation = Quaternion.Euler(new Vector3(0,180,0));
+                    }else if(cars[i].name=="Speeder" || cars[i].name=="Car2 (1)M"){
+                        cars[i].transform.localRotation = Quaternion.Euler(new Vector3(0,90,0));
+                    }
+                    
+
                 }
                 #if UNITY_EDITOR
                 StartCoroutine(SendData());
