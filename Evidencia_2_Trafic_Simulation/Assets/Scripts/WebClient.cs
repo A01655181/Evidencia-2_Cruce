@@ -136,9 +136,7 @@ public class WebClient : MonoBehaviour
             for (int i = 0; i < cars.Length; i++)
             {
                 cars[i].transform.position += moveVects[i] * Time.deltaTime;
-                diff += (new Vector3(step.cars[i].pos[0] * scale, 0.5f, step.cars[i].pos[1] * scale) - cars[i].transform.position).magnitude;
             }
-            diff = diff / cars.Length;
             if (chrono > 1.0f)
             {
                 received = false;
