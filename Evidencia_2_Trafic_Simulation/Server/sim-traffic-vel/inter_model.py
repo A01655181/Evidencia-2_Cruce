@@ -471,6 +471,21 @@ class IntersectionModel(mesa.Model):
         right_dict["down"] = right_down
         self.streets["right"] = right_dict
 
+
+    def get_data(self):
+        data = {}
+
+        data["cars"] = [ {"pos":[int(agent.pos[0]), int(agent.pos[1])], "name": "Car" if isinstance(agent, Car) else "Ambulance", "id" : agent.unique_id} for agent in self.vh_scheduler.agents]
+
+        data["tf"] = [
+            {"pos": [int(agent.pos[0]), int(agent.pos[1])], "status":agent.status}
+            for agent in self.vh_scheduler.agents]
+
+        print(data)
+
+        return data
+
+
     """ GET TRAFFIC LIGHTS READ  """
     def get_tf_reads(self):
         s_up = [agents for agents in self.tl_scheduler.agents if agents.direction == "up"]
@@ -802,6 +817,7 @@ class IntersectionModel(mesa.Model):
 
         if self.curr_cars < self.max_cars:
             self.spawnVehicles()
+            return self.get_data()
 
         if self.tf_cycle is True: # if there is a cycle active
 
@@ -834,6 +850,7 @@ class IntersectionModel(mesa.Model):
                         self.tl_scheduler.step() # move vehicles
                 else:
                     self.vh_scheduler.step() # move vehicles
+
             else:
                 self.vh_scheduler.step() # move vehicles
                 self.time += 1
@@ -900,13 +917,4 @@ class IntersectionModel(mesa.Model):
                 self.tl_scheduler.step()
                 self.vh_scheduler.step()
 
-        # for to_kill in self.kill_agents:
-        #     try:
-        #         self.grid.remove_agent(to_kill)
-        #         self.vh_scheduler.remove(to_kill)
-        #         self.kill_agents.remove(to_kill)
-        #     except:
-        #         print(self.kill_agents)
-        #         print("An error happened")
-
-        #     self.curr_cars -= 1
+        return self.get_data()
