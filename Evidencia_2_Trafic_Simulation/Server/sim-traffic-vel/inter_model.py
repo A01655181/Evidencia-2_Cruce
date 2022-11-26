@@ -35,7 +35,10 @@ def move(agent):
         curr_x, curr_y = agent.pos
         curr_pos = [curr_x, curr_y]
 
+        print(f"Current position is {curr_pos}")
+
         for location in agent.model.streets[agent.final_street][agent.final_side]:
+            print(location)
             if curr_pos == location:
                 agent.inside_fin = True
                 print("AGENT IS INSIDE FINAL STREET!!!")
@@ -55,58 +58,67 @@ def move(agent):
             cannot_use_step = False
             searching = agent.model.grid.get_cell_list_contents([steps])
 
+            # [tf, car, am]
+
             if searching == []:
                 opts.append(steps)
             elif searching[0].unique_id == agent.unique_id:
                 opts.append(steps)
             else:
                 for obj in searching:
-                    if isinstance(obj, Sidewalk) or isinstance(obj, Car) or isinstance(obj, Ambulance) or isinstance(obj, AmbulanceTail):
-                        # If looking at direction of Car you find a vehicle then stop return
+                    # if isinstance(obj, Sidewalk) or isinstance(obj, Car) or isinstance(obj, Ambulance) or isinstance(obj, AmbulanceTail):
+                    #     # If looking at direction of Car you find a vehicle then stop return
+                    #     cannot_use_step = True
+                    #     break # cannot use this stuff
+
+                    if isinstance(obj, TrafficLight) and obj.status != 1:
+                        cannot_use_step = False
+                        break
+
+                    else:
                         cannot_use_step = True
-                        break # cannot use this stuff
+                        break
 
-                    elif isinstance(obj, TrafficLight):
-                        print(f"PRINTING CURRENT AGENT STREET INFO: {agent.model.streets[agent.final_street][agent.final_side]}")
+                        # print(f"PRINTING CURRENT AGENT STREET INFO: {agent.model.streets[agent.final_street][agent.final_side]}")
 
-                        # If agent is in intersection
-                        #   can move inside the intersection and to traffic lights even if they are red
+                        # # If agent is in intersection
+                        # #   can move inside the intersection and to traffic lights even if they are red
 
-                        # else if agent is in final street
-                        #   can move only to shit inside final street and if a TrafficLight is not inside final street then ignore
+                        # # else if agent is in final street
+                        # #   can move only to shit inside final street and if a TrafficLight is not inside final street then ignore
 
-                        if agent.inside_int is True:
-                            cannot_use_step =  False # can use step
-                            break
-                        else:
-                            if obj.status == 1: # if red TrafficLight
-                                return
-                            else:
-                                cannot_use_step =  False # can use step
-                                break
+                        # if agent.inside_int is True:
+                        #     cannot_use_step =  True # can use step
+                        #     break
+                        # else:
+                        #     if obj.status == 1: # if red TrafficLight
+                        #         return
+                        #     else:
+                        #         cannot_use_step =  False # can use step
+                        #         break
 
-                        if agent.inside_fin is True:
+                        # if agent.inside_fin is True:
 
-                            # Check if object is in agent's final street
-                            obj_in_street = False
-                            obj_x, obj_y = obj.pos
-                            obj_loc = [obj_x, obj_y]
+                        #     # Check if object is in agent's final street
+                        #     obj_in_street = False
+                        #     obj_x, obj_y = obj.pos
+                        #     obj_loc = [obj_x, obj_y]
 
-                            for location in agent.model.streets[agent.final_street][agent.final_side]:
-                                if obj_loc == location:
-                                    obj_in_street = True # there is a traffic light in final street
-                                    break
+                        #     for location in agent.model.streets[agent.final_street][agent.final_side]:
+                        #         if obj_loc == location:
+                        #             obj_in_street = True # there is a traffic light in final street
+                        #             break
 
-                            if obj_in_street is True: # if object in final street then can add it
-                                print(f"------------------------------------------------STREET LIGHT IN FINAL STREET AT {obj.pos}")
-                                print("Can add it")
-                                cannot_use_step = False
-                                break
-                            else:
-                                print(f"------------------------------------------------STREET LIGHT NOT IN FINAL STREET AT {obj.pos}")
-                                print("Cannot add it")
-                                cannot_use_step = True
-                                break
+                        #     if obj_in_street is True: # if object in final street then can add it
+                        #         print(f"------------------------------------------------STREET LIGHT IN FINAL STREET AT {obj.pos}")
+                        #         print("Can add it")
+                        #         cannot_use_step = False
+                        #         break
+                        #     else:
+                        #         print(f"------------------------------------------------STREET LIGHT NOT IN FINAL STREET AT {obj.pos}")
+                        #         print("Cannot add it")
+                        #         cannot_use_step = True
+                        #         break
 
                 if cannot_use_step is True:
                     continue
@@ -663,16 +675,15 @@ class Ambulance(mesa.Agent): # head
         des_x, des_y = self.pos
         curr_pos = [des_x, des_y]
 
-        if curr_pos == self.final_des:
-            self.model.grid.remove_agent(self.tail)
-
-            self.model.vh_scheduler.remove(self)
-            self.model.grid.remove_agent(self)
-
-            self.model.curr_cars -= 1
-            return
-        else:
-            move(self)
+        # If curr pos is inside any dispawn
+        for dispawn in self.model.dispawn:
+            if curr_pos == dispawn:
+                self.model.grid.remove_agent(self.tail)
+                self.model.vh_scheduler.remove(self)
+                self.model.grid.remove_agent(self)
+                self.model.curr_cars -= 1
+                return
+        move(self)
 
 
 class AmbulanceTail(mesa.Agent):
@@ -707,13 +718,15 @@ class Car(mesa.Agent):
         des_x, des_y = self.pos
         curr_pos = [des_x, des_y]
 
-        if curr_pos == self.final_des:
-            self.model.vh_scheduler.remove(self)
-            self.model.grid.remove_agent(self)
-            self.model.curr_cars -= 1
-            return
-        else:
-            move(self)
+        # If curr pos is inside any dispawn
+        for dispawn in self.model.dispawn:
+            if curr_pos == dispawn:
+                self.model.vh_scheduler.remove(self)
+                self.model.grid.remove_agent(self)
+                self.model.curr_cars -= 1
+                return
+
+        move(self)
 
 
 # INTERSECTION GO HERE
