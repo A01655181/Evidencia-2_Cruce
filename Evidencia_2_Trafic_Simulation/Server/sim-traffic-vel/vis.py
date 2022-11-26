@@ -34,17 +34,33 @@ def agent_portrayal(agent):
         portrayal["Layer"] = 0
         portrayal["r"] = 0.3
     elif isinstance(agent, Car):
-        portrayal["Color"] = "brown"
-        portrayal["Layer"] = 1
-        portrayal["r"] = 0.9
+        if agent.status == 3:
+            portrayal["Color"] = "purple"
+            portrayal["Layer"] = 1
+            portrayal["r"] = 1
+        else:
+            portrayal["Color"] = "brown"
+            portrayal["Layer"] = 1
+            portrayal["r"] = 0.9
     elif isinstance(agent, Ambulance):
+        if agent.status == 9:
+            portrayal["Color"] = "purple"
+            portrayal["Layer"] = 1
+            portrayal["r"] = 1
+        else:
             portrayal["Color"] = "orange"
             portrayal["Layer"] = 1
             portrayal["r"] = 0.5
     elif isinstance(agent, AmbulanceTail):
+        if agent.status == 9:
+            portrayal["Color"] = "purple"
+            portrayal["Layer"] = 1
+            portrayal["r"] = 1
+        else:
             portrayal["Color"] = "orange"
             portrayal["Layer"] = 1
             portrayal["r"] = 0.5
+
     elif isinstance(agent, TrafficLight):
         if (agent.status == 1): # if stop in step
             portrayal["Color"] = "red"
