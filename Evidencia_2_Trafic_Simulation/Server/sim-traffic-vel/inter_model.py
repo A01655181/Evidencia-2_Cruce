@@ -4,115 +4,438 @@ import random
 import math
 
 def move(agent):
-    possible_steps = agent.model.grid.get_neighborhood(
-        agent.pos, moore=True, include_center=True
-    )
 
-    # print(f"Possible steps: {possible_steps}")
+    # 0 is normal, 1 is pressured, 2 is desesperated, 3 is ambulance
+    if agent.status == 0:
 
-    if agent.inside_int is False:
-        curr_x, curr_y = agent.pos
-        curr_pos = [curr_x, curr_y]
+        possible_steps = agent.model.grid.get_neighborhood(
+            agent.pos, moore=True, include_center=True
+        )
 
-        for inter in agent.model.intersection:
-            if curr_pos == inter:
-                agent.inside_int = True
-                break
+        # print(f"Possible steps: {possible_steps}")
 
-    opts = []
-    for steps in possible_steps:
-        cannot_use_step = False
-        searching = agent.model.grid.get_cell_list_contents([steps])
+        if agent.inside_int is False:
+            curr_x, curr_y = agent.pos
+            curr_pos = [curr_x, curr_y]
 
-        if searching == []:
-            opts.append(steps)
-        elif searching[0].unique_id == agent.unique_id:
-            opts.append(steps)
-        else:
-            for obj in searching:
-                if isinstance(obj, Sidewalk) or isinstance(obj, Car) or isinstance(obj, Ambulance):
-                    # If looking at direction of Car you find a vehicle then stop return
-                    cannot_use_step = True
-                    break # cannot use this stuff
+            for inter in agent.model.intersection:
+                if curr_pos == inter:
+                    agent.inside_int = True
+                    break
 
-                elif isinstance(obj, TrafficLight):
-                    # If found a traffic light
+        opts = []
+        for steps in possible_steps:
+            cannot_use_step = False
+            searching = agent.model.grid.get_cell_list_contents([steps])
 
-                    # Check if object is in agent's final street
-                    obj_in_street = False
+            if searching == []:
+                opts.append(steps)
+            elif searching[0].unique_id == agent.unique_id:
+                opts.append(steps)
+            else:
+                for obj in searching:
+                    if isinstance(obj, Sidewalk) or isinstance(obj, Car) or isinstance(obj, Ambulance):
+                        # If looking at direction of Car you find a vehicle then stop return
+                        cannot_use_step = True
+                        break # cannot use this stuff
 
-                    obj_x, obj_y = obj.pos
-                    obj_loc = [obj_x, obj_y]
+                    elif isinstance(obj, TrafficLight):
+                        # If found a traffic light
 
-                    if obj_in_street is True: # if object in final street then can add it
-                        break
-                    else:
+                        # Check if object is in agent's final street
+                        obj_in_street = False
 
-                        if agent.inside_int is False:
-                            if obj.status == 1:
-                                # do not move
-                                return
+                        obj_x, obj_y = obj.pos
+                        obj_loc = [obj_x, obj_y]
+
+                        if obj_in_street is True: # if object in final street then can add it
+                            break
                         else:
-                            # If you are inside intersection then can be added
+
+                            if agent.inside_int is False:
+                                if obj.status == 1:
+                                    # do not move
+                                    return
+                            else:
+                                # If you are inside intersection then can be added
+                                break
+
+                if cannot_use_step is True:
+                    continue
+                else:
+                    opts.append(steps)
+
+        # print(f"Opts found for moving: {opts}")
+
+        # After adding all possible cells filtered agent-wise, check if cells are in either the current street as agent or in the intersection array
+        # But first, check if any opts left, other wise only return and set speed of the agent to 0
+        if len(opts) == 0:
+            agent.velocity = 0
+            return
+
+        # Before generating the final opts check if agent itself is inside intersection or is not.
+        # If in intersection already only use street.
+        # If in street only use intersection coords
+        # in_inter = False # var to check if agent is already in the intersection
+        # x_curr, y_curr = agent.pos
+        # curr_loc = [x_curr, y_curr]
+
+        in_inter = False
+        in_street = False
+        final_opts = []
+        for coords in opts:
+            x_next, y_next = coords
+            next_loc = [x_next, y_next]
+            for location in agent.model.streets[agent.curr_street][agent.curr_side]:
+                if location == next_loc:
+                    in_street = True
+                    # print(f"Current value {location} is inside current street")
+                    final_opts.append(next_loc)
+                    break
+            # Or if in intersection
+            for inter in agent.model.intersection:
+                if next_loc == inter:
+                    in_iter = True
+                    # print(f"Current value {inter} inside intersection")
+                    final_opts.append(next_loc)
+                    break
+            for location in agent.model.streets[agent.final_street][agent.final_side]:
+                if location == next_loc:
+                    in_street = True
+                    # print(f"Current value {location} is inside next street")
+                    final_opts.append(next_loc)
+                    break
+        min_val = 100000
+        best = []
+        for locations in final_opts:
+            x, y = locations
+            new_point = [x, y]
+            aux = get_distance(new_point, agent.final_des)
+            if aux < min_val:
+                best = new_point
+                min_val = aux
+        if (len(best) > 1):
+            agent.model.grid.move_agent(agent, tuple(e for e in best))
+
+    elif agent.status == 1: # agent.vel = 2
+
+        for i in range(2):
+            possible_steps = agent.model.grid.get_neighborhood(
+                agent.pos, moore=True, include_center=True
+            )
+
+            # print(f"Possible steps: {possible_steps}")
+
+            if agent.inside_int is False:
+                curr_x, curr_y = agent.pos
+                curr_pos = [curr_x, curr_y]
+
+                for inter in agent.model.intersection:
+                    if curr_pos == inter:
+                        agent.inside_int = True
+                        break
+
+            opts = []
+            for steps in possible_steps:
+                cannot_use_step = False
+                searching = agent.model.grid.get_cell_list_contents([steps])
+
+                if searching == []:
+                    opts.append(steps)
+                elif searching[0].unique_id == agent.unique_id:
+                    opts.append(steps)
+                else:
+                    for obj in searching:
+                        if isinstance(obj, Sidewalk) or isinstance(obj, Car) or isinstance(obj, Ambulance):
+                            # If looking at direction of Car you find a vehicle then stop return
+                            cannot_use_step = True
+                            break # cannot use this stuff
+
+                        elif isinstance(obj, TrafficLight):
+                            # If found a traffic light
+
+                            # Check if object is in agent's final street
+                            obj_in_street = False
+
+                            obj_x, obj_y = obj.pos
+                            obj_loc = [obj_x, obj_y]
+
+                            if obj_in_street is True: # if object in final street then can add it
+                                break
+                            else:
+
+                                if agent.inside_int is False:
+                                    if obj.status == 1:
+                                        # do not move
+                                        return
+                                else:
+                                    # If you are inside intersection then can be added
+                                    break
+
+                    if cannot_use_step is True:
+                        continue
+                    else:
+                        opts.append(steps)
+
+            # print(f"Opts found for moving: {opts}")
+
+            # After adding all possible cells filtered agent-wise, check if cells are in either the current street as agent or in the intersection array
+            # But first, check if any opts left, other wise only return and set speed of the agent to 0
+            if len(opts) == 0:
+                agent.velocity = 0
+                return
+
+            # Before generating the final opts check if agent itself is inside intersection or is not.
+            # If in intersection already only use street.
+            # If in street only use intersection coords
+            # in_inter = False # var to check if agent is already in the intersection
+            # x_curr, y_curr = agent.pos
+            # curr_loc = [x_curr, y_curr]
+
+            in_inter = False
+            in_street = False
+            final_opts = []
+            for coords in opts:
+                x_next, y_next = coords
+                next_loc = [x_next, y_next]
+                for location in agent.model.streets[agent.curr_street][agent.curr_side]:
+                    if location == next_loc:
+                        in_street = True
+                        # print(f"Current value {location} is inside current street")
+                        final_opts.append(next_loc)
+                        break
+                # Or if in intersection
+                for inter in agent.model.intersection:
+                    if next_loc == inter:
+                        in_iter = True
+                        # print(f"Current value {inter} inside intersection")
+                        final_opts.append(next_loc)
+                        break
+                for location in agent.model.streets[agent.final_street][agent.final_side]:
+                    if location == next_loc:
+                        in_street = True
+                        # print(f"Current value {location} is inside next street")
+                        final_opts.append(next_loc)
+                        break
+            min_val = 100000
+            best = []
+            for locations in final_opts:
+                x, y = locations
+                new_point = [x, y]
+                aux = get_distance(new_point, agent.final_des)
+                if aux < min_val:
+                    best = new_point
+                    min_val = aux
+            if (len(best) > 1):
+                agent.model.grid.move_agent(agent, tuple(e for e in best))
+    elif agent.status == 2:
+
+        for i in range(3):
+            possible_steps = agent.model.grid.get_neighborhood(
+                agent.pos, moore=True, include_center=True
+            )
+
+            # print(f"Possible steps: {possible_steps}")
+
+            if agent.inside_int is False:
+                curr_x, curr_y = agent.pos
+                curr_pos = [curr_x, curr_y]
+
+                for inter in agent.model.intersection:
+                    if curr_pos == inter:
+                        agent.inside_int = True
+                        break
+
+            opts = []
+            for steps in possible_steps:
+                cannot_use_step = False
+                searching = agent.model.grid.get_cell_list_contents([steps])
+
+                if searching == []:
+                    opts.append(steps)
+                elif searching[0].unique_id == agent.unique_id:
+                    opts.append(steps)
+                else:
+                    for obj in searching:
+                        if isinstance(obj, Sidewalk) or isinstance(obj, Car) or isinstance(obj, Ambulance):
+                            # If looking at direction of Car you find a vehicle then stop return
+                            cannot_use_step = True
+                            break # cannot use this stuff
+
+                        elif isinstance(obj, TrafficLight):
+                            # If found a traffic light
+
+                            # Check if object is in agent's final street
+                            obj_in_street = False
+
+                            obj_x, obj_y = obj.pos
+                            obj_loc = [obj_x, obj_y]
+
+                            if obj_in_street is True: # if object in final street then can add it
+                                break
+                            else:
+
+                                if agent.inside_int is False:
+                                    if obj.status == 1:
+                                        # do not move
+                                        return
+                                else:
+                                    # If you are inside intersection then can be added
+                                    break
+
+                    if cannot_use_step is True:
+                        continue
+                    else:
+                        opts.append(steps)
+
+            # print(f"Opts found for moving: {opts}")
+
+            # After adding all possible cells filtered agent-wise, check if cells are in either the current street as agent or in the intersection array
+            # But first, check if any opts left, other wise only return and set speed of the agent to 0
+            if len(opts) == 0:
+                agent.velocity = 0
+                return
+
+            # Before generating the final opts check if agent itself is inside intersection or is not.
+            # If in intersection already only use street.
+            # If in street only use intersection coords
+            # in_inter = False # var to check if agent is already in the intersection
+            # x_curr, y_curr = agent.pos
+            # curr_loc = [x_curr, y_curr]
+
+            in_inter = False
+            in_street = False
+            final_opts = []
+            for coords in opts:
+                x_next, y_next = coords
+                next_loc = [x_next, y_next]
+                for location in agent.model.streets[agent.curr_street][agent.curr_side]:
+                    if location == next_loc:
+                        in_street = True
+                        # print(f"Current value {location} is inside current street")
+                        final_opts.append(next_loc)
+                        break
+                # Or if in intersection
+                for inter in agent.model.intersection:
+                    if next_loc == inter:
+                        in_iter = True
+                        # print(f"Current value {inter} inside intersection")
+                        final_opts.append(next_loc)
+                        break
+                for location in agent.model.streets[agent.final_street][agent.final_side]:
+                    if location == next_loc:
+                        in_street = True
+                        # print(f"Current value {location} is inside next street")
+                        final_opts.append(next_loc)
+                        break
+            min_val = 100000
+            best = []
+            for locations in final_opts:
+                x, y = locations
+                new_point = [x, y]
+                aux = get_distance(new_point, agent.final_des)
+                if aux < min_val:
+                    best = new_point
+                    min_val = aux
+            if (len(best) > 1):
+                agent.model.grid.move_agent(agent, tuple(e for e in best))
+
+    elif agent.status == 3: # is ambulance
+        for i in range(4):
+            possible_steps = agent.model.grid.get_neighborhood(
+                agent.pos, moore=True, include_center=True
+            )
+
+            # print(f"Possible steps: {possible_steps}")
+
+            if agent.inside_int is False:
+                curr_x, curr_y = agent.pos
+                curr_pos = [curr_x, curr_y]
+
+                for inter in agent.model.intersection:
+                    if curr_pos == inter:
+                        agent.inside_int = True
+                        break
+
+            opts = []
+            for steps in possible_steps:
+                cannot_use_step = False
+                searching = agent.model.grid.get_cell_list_contents([steps])
+
+                if searching == []:
+                    opts.append(steps)
+                elif searching[0].unique_id == agent.unique_id:
+                    opts.append(steps)
+                else:
+                    for obj in searching:
+                        if isinstance(obj, Sidewalk) or isinstance(obj, Car) or isinstance(obj, Ambulance):
+                            # If looking at direction of Car you find a vehicle then stop return
+                            cannot_use_step = True
+                            break # cannot use this stuff
+
+                        elif isinstance(obj, TrafficLight):
+                            #cannot_use_step = False
+                            print(":::: ----- Traffic light by ambulance found!!")
                             break
 
-            if cannot_use_step is True:
-                continue
-            else:
-                opts.append(steps)
+                    if cannot_use_step is True:
+                        continue
+                    else:
+                        opts.append(steps)
 
-    # print(f"Opts found for moving: {opts}")
+            # print(f"Opts found for moving: {opts}")
 
-    # After adding all possible cells filtered agent-wise, check if cells are in either the current street as agent or in the intersection array
-    # But first, check if any opts left, other wise only return and set speed of the agent to 0
-    if len(opts) == 0:
-        agent.velocity = 0
-        return
+            # After adding all possible cells filtered agent-wise, check if cells are in either the current street as agent or in the intersection array
+            # But first, check if any opts left, other wise only return and set speed of the agent to 0
+            if len(opts) == 0:
+                agent.velocity = 0
+                return
 
-    # Before generating the final opts check if agent itself is inside intersection or is not.
-    # If in intersection already only use street.
-    # If in street only use intersection coords
-    # in_inter = False # var to check if agent is already in the intersection
-    # x_curr, y_curr = agent.pos
-    # curr_loc = [x_curr, y_curr]
+            # Before generating the final opts check if agent itself is inside intersection or is not.
+            # If in intersection already only use street.
+            # If in street only use intersection coords
+            # in_inter = False # var to check if agent is already in the intersection
+            # x_curr, y_curr = agent.pos
+            # curr_loc = [x_curr, y_curr]
 
-    in_inter = False
-    in_street = False
-    final_opts = []
-    for coords in opts:
-        x_next, y_next = coords
-        next_loc = [x_next, y_next]
-        for location in agent.model.streets[agent.curr_street][agent.curr_side]:
-            if location == next_loc:
-                in_street = True
-                # print(f"Current value {location} is inside current street")
-                final_opts.append(next_loc)
-                break
-        # Or if in intersection
-        for inter in agent.model.intersection:
-            if next_loc == inter:
-                in_iter = True
-                # print(f"Current value {inter} inside intersection")
-                final_opts.append(next_loc)
-                break
-        for location in agent.model.streets[agent.final_street][agent.final_side]:
-            if location == next_loc:
-                in_street = True
-                # print(f"Current value {location} is inside next street")
-                final_opts.append(next_loc)
-                break
-    min_val = 100000
-    best = []
-    for locations in final_opts:
-        x, y = locations
-        new_point = [x, y]
-        aux = get_distance(new_point, agent.final_des)
-        if aux < min_val:
-            best = new_point
-            min_val = aux
-    if (len(best) > 1):
-        agent.model.grid.move_agent(agent, tuple(e for e in best))
-
+            in_inter = False
+            in_street = False
+            final_opts = []
+            for coords in opts:
+                x_next, y_next = coords
+                next_loc = [x_next, y_next]
+                for location in agent.model.streets[agent.curr_street][agent.curr_side]:
+                    if location == next_loc:
+                        in_street = True
+                        # print(f"Current value {location} is inside current street")
+                        final_opts.append(next_loc)
+                        break
+                # Or if in intersection
+                for inter in agent.model.intersection:
+                    if next_loc == inter:
+                        in_iter = True
+                        # print(f"Current value {inter} inside intersection")
+                        final_opts.append(next_loc)
+                        break
+                for location in agent.model.streets[agent.final_street][agent.final_side]:
+                    if location == next_loc:
+                        in_street = True
+                        # print(f"Current value {location} is inside next street")
+                        final_opts.append(next_loc)
+                        break
+            min_val = 100000
+            best = []
+            for locations in final_opts:
+                x, y = locations
+                new_point = [x, y]
+                aux = get_distance(new_point, agent.final_des)
+                if aux < min_val:
+                    best = new_point
+                    min_val = aux
+            if (len(best) > 1):
+                agent.model.grid.move_agent(agent, tuple(e for e in best))
+    else:
+        pass
 
 # Some useful methods that are not dependent of an agent
 def get_distance(p, q):
