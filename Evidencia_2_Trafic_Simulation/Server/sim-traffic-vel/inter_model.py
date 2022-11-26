@@ -34,19 +34,22 @@ def move(agent):
                 opts.append(steps)
             else:
                 for obj in searching:
-                    if isinstance(obj, Sidewalk) or isinstance(obj, Car) or isinstance(obj, Ambulance):
+                    if isinstance(obj, Sidewalk) or isinstance(obj, Car) or isinstance(obj, Ambulance) or isinstance(obj, AmbulanceTail):
                         # If looking at direction of Car you find a vehicle then stop return
                         cannot_use_step = True
                         break # cannot use this stuff
 
                     elif isinstance(obj, TrafficLight):
-                        # If found a traffic light
-
                         # Check if object is in agent's final street
                         obj_in_street = False
 
                         obj_x, obj_y = obj.pos
                         obj_loc = [obj_x, obj_y]
+
+                        for location in agent.model.streets[agent.final_street][agent.final_side]:
+                            if location == obj_loc:
+                                obj_in_street = True # thre is a traffic light in the final street
+                                break
 
                         if obj_in_street is True: # if object in final street then can add it
                             break
@@ -146,7 +149,7 @@ def move(agent):
                     opts.append(steps)
                 else:
                     for obj in searching:
-                        if isinstance(obj, Sidewalk) or isinstance(obj, Car) or isinstance(obj, Ambulance):
+                        if isinstance(obj, Sidewalk) or isinstance(obj, Car) or isinstance(obj, Ambulance) or isinstance(obj, AmbulanceTail):
                             # If looking at direction of Car you find a vehicle then stop return
                             cannot_use_step = True
                             break # cannot use this stuff
@@ -154,11 +157,15 @@ def move(agent):
                         elif isinstance(obj, TrafficLight):
                             # If found a traffic light
 
-                            # Check if object is in agent's final street
                             obj_in_street = False
 
                             obj_x, obj_y = obj.pos
                             obj_loc = [obj_x, obj_y]
+
+                            for location in agent.model.streets[agent.final_street][agent.final_side]:
+                                if location == obj_loc:
+                                    obj_in_street = True # thre is a traffic light in the final street
+                                    break
 
                             if obj_in_street is True: # if object in final street then can add it
                                 break
@@ -257,19 +264,22 @@ def move(agent):
                     opts.append(steps)
                 else:
                     for obj in searching:
-                        if isinstance(obj, Sidewalk) or isinstance(obj, Car) or isinstance(obj, Ambulance):
+                        if isinstance(obj, Sidewalk) or isinstance(obj, Car) or isinstance(obj, Ambulance) or isinstance(obj, AmbulanceTail):
                             # If looking at direction of Car you find a vehicle then stop return
                             cannot_use_step = True
                             break # cannot use this stuff
 
                         elif isinstance(obj, TrafficLight):
                             # If found a traffic light
-
-                            # Check if object is in agent's final street
                             obj_in_street = False
 
                             obj_x, obj_y = obj.pos
                             obj_loc = [obj_x, obj_y]
+
+                            for location in agent.model.streets[agent.final_street][agent.final_side]:
+                                if location == obj_loc:
+                                    obj_in_street = True # thre is a traffic light in the final street
+                                    break
 
                             if obj_in_street is True: # if object in final street then can add it
                                 break
@@ -340,18 +350,21 @@ def move(agent):
             if (len(best) > 1):
                 agent.model.grid.move_agent(agent, tuple(e for e in best))
 
+    # MOVING AMBULANCE
     elif agent.status == 3: # is ambulance
+        print(f"Ambulance in current position {agent.pos}...")
+
         for i in range(4):
+            # Get head position
+            curr_x, curr_y = agent.pos
+            curr_pos = [curr_x, curr_y]
+
+            # Move ambulance tail to next position
             possible_steps = agent.model.grid.get_neighborhood(
                 agent.pos, moore=True, include_center=True
             )
 
-            # print(f"Possible steps: {possible_steps}")
-
             if agent.inside_int is False:
-                curr_x, curr_y = agent.pos
-                curr_pos = [curr_x, curr_y]
-
                 for inter in agent.model.intersection:
                     if curr_pos == inter:
                         agent.inside_int = True
@@ -368,13 +381,14 @@ def move(agent):
                     opts.append(steps)
                 else:
                     for obj in searching:
-                        if isinstance(obj, Sidewalk) or isinstance(obj, Car) or isinstance(obj, Ambulance):
+                        if isinstance(obj, Sidewalk) or isinstance(obj, Car) or isinstance(obj, Ambulance) or isinstance(obj, AmbulanceTail):
                             # If looking at direction of Car you find a vehicle then stop return
+                            print(f":::: ----- Car, wall or other ambulance found so cannot go into this step! {steps}")
                             cannot_use_step = True
                             break # cannot use this stuff
 
                         elif isinstance(obj, TrafficLight):
-                            #cannot_use_step = False
+                            cannot_use_step = False
                             print(":::: ----- Traffic light by ambulance found!!")
                             break
 
@@ -434,6 +448,15 @@ def move(agent):
                     min_val = aux
             if (len(best) > 1):
                 agent.model.grid.move_agent(agent, tuple(e for e in best))
+
+            print(f"-:::: [... has moved to new position {best}. Now will move the associated tail {agent.tail.unique_id} ]")
+
+            if best != curr_pos: # if did not move
+                # Move ambulance tail to head
+                tail_inst = agent.tail # instance of tail
+                agent.model.grid.move_agent(tail_inst, tuple(e for e in curr_pos))
+                print(f"-:::: [ Associated tail {agent.tail.unique_id} has moved to former position {curr_pos}")
+
     else:
         pass
 
@@ -482,9 +505,9 @@ class TrafficLight(mesa.Agent):
                 self.status = 1
 
 
-class Ambulance(mesa.Agent):
+class Ambulance(mesa.Agent): # head
     """An ambulance agent"""
-    def __init__(self, unique_id, model):
+    def __init__(self, unique_id, tail, model):
         super().__init__(unique_id, model)
         self.status = 3 # 0 is normal, 1 is pressured, 2 is desesperated, 3 is ambulance
         self.velocity = 4 # it will travel only a meter at the time
@@ -497,20 +520,31 @@ class Ambulance(mesa.Agent):
         self.final_side = ""
 
         self.final_des = []
-
         self.inside_int = False
+
+        self.tail = tail
+
 
     def step(self):
         des_x, des_y = self.pos
         curr_pos = [des_x, des_y]
 
         if curr_pos == self.final_des:
+            self.model.grid.remove_agent(self.tail)
+
             self.model.vh_scheduler.remove(self)
             self.model.grid.remove_agent(self)
+
             self.model.curr_cars -= 1
             return
         else:
             move(self)
+
+
+class AmbulanceTail(mesa.Agent):
+    def __init__(self, unique_id, model):
+            super().__init__(unique_id, model)
+            self.status = 3 # 0 is normal, 1 is pressured, 2 is desesperated, 3 is ambulance
 
 
 class Car(mesa.Agent):
@@ -1080,25 +1114,15 @@ class IntersectionModel(mesa.Model):
                 x, y = location # extract the location
                 spawn_pos = [x, y]
 
-                agent = Ambulance(self.unique_ids, self) # creates agent
+                # SPAWNING TAIL
+                tail = AmbulanceTail(self.unique_ids, self) # creates agent
+                self.unique_ids += 1
+                agent = Ambulance(self.unique_ids, tail, self) # creates agent
 
                 self.vh_scheduler.add(agent) # adds agent to scheduler
+
+                self.grid.place_agent(tail, (0, 0))
                 self.grid.place_agent(agent, (x, y))
-
-                status_prob = round(random.uniform(0, 1), 2)
-                status_debug = ""
-
-                if .80 < status_prob <= .98:
-                    if self.debug is True:
-                        status_debug = "[ pressured ]"
-                    agent.status = 1
-                elif status_prob > .98:
-                    if self.debug is True:
-                        status_debug = "[ desesperated ]"
-                    agent.status = 2
-                else:
-                    if self.debug is True:
-                        status_debug = "[ normal ]"
 
                 # Set cars' destination
                 copy_of_dispawn = self.dispawn
@@ -1129,7 +1153,7 @@ class IntersectionModel(mesa.Model):
                         break
 
                 if self.debug is True:
-                    print(f" [[ Car ]] spawned at ({x}. {y}) with status of {status_debug}")
+                    print(f" [[ Ambulance ]] spawned at ({x}. {y}) with status of {agent.status}")
                     print(f"    ::- Will go to {agent.final_des}")
 
                 self.unique_ids += 1
@@ -1172,7 +1196,7 @@ class IntersectionModel(mesa.Model):
                 self.yellow_light = True
                 self.tl_scheduler.step() # move vehicles
                 self.time += 1
-            elif self.time == 35: # max time
+            elif self.time == 50: # max time
                 # Do while intersection is not empty
                 int_empty = self.check_inter_empty()
 
@@ -1203,13 +1227,13 @@ class IntersectionModel(mesa.Model):
             # print(":::- Velocity cycle is running!")
             # print(self.time)
 
-            if self.time == 10:
+            if self.time == 20:
                 # Set current traffic light in green to yellow
                 self.yellow_light = True
                 self.tl_scheduler.step() # move vehicles
                 self.time += 1
 
-            elif self.time == 20: # max time
+            elif self.time == 40: # max time
 
                 # Do while intersection is not empty
                 int_empty = self.check_inter_empty()

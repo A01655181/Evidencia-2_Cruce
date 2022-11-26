@@ -41,6 +41,10 @@ def agent_portrayal(agent):
             portrayal["Color"] = "orange"
             portrayal["Layer"] = 1
             portrayal["r"] = 0.5
+    elif isinstance(agent, AmbulanceTail):
+            portrayal["Color"] = "orange"
+            portrayal["Layer"] = 1
+            portrayal["r"] = 0.5
     elif isinstance(agent, TrafficLight):
         if (agent.status == 1): # if stop in step
             portrayal["Color"] = "red"
