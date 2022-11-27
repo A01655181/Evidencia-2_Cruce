@@ -39,10 +39,9 @@ def move(agent):
                     agent.model.vh_scheduler.remove(agent_to_del)
                     agent.model.grid.remove_agent(agent_to_del)
                 else:
-                    agent.model.grid.remove_agent(agent_to_del.head)
-                    agent.model.vh_scheduler.remove(agent_to_del.head)
-                    agent.model.grid.remove_agent(agent_to_del)
-
+                     agent.model.grid.remove_agent(agent_to_del.head)
+                     agent.model.vh_scheduler.remove(agent_to_del.head)
+                     agent.model.grid.remove_agent(agent_to_del)
                 return
 
 
@@ -1145,7 +1144,7 @@ class IntersectionModel(mesa.Model):
                 self.yellow_light = True
                 self.tl_scheduler.step() # move vehicles
                 self.time += 1
-            elif self.time == 50: # max time
+            elif self.time == 60: # max time
                 # Do while intersection is not empty
                 int_empty = self.check_inter_empty()
 
@@ -1182,7 +1181,7 @@ class IntersectionModel(mesa.Model):
                 self.tl_scheduler.step() # move vehicles
                 self.time += 1
 
-            elif self.time == 40: # max time
+            elif self.time == 60: # max time
 
                 # Do while intersection is not empty
                 int_empty = self.check_inter_empty()
