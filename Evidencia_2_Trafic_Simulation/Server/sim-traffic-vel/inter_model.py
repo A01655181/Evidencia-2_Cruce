@@ -4,9 +4,6 @@ import random
 import math
 
 def move(agent):
-    print("Moving\n")
-    print(f"Vehicle started at position {agent.pos}\n")
-
     will_ignore = False
 
     if isinstance(agent, Ambulance):
@@ -28,20 +25,16 @@ def move(agent):
         for inter in agent.model.intersection:
             if curr_pos == inter:
                 agent.inside_int = True
-                print("AGENT IS INSIDE INTERSECTION!!!")
                 break
 
     if agent.inside_fin is False:
         curr_x, curr_y = agent.pos
         curr_pos = [curr_x, curr_y]
 
-        print(f"Current position is {curr_pos}")
-
         for location in agent.model.streets[agent.final_street][agent.final_side]:
             print(location)
             if curr_pos == location:
                 agent.inside_fin = True
-                print("AGENT IS INSIDE FINAL STREET!!!")
                 break
 
     # 0 is normal, 1 is pressured, 2 is desesperated, 3 is ambulance
@@ -74,51 +67,8 @@ def move(agent):
                     if isinstance(obj, TrafficLight) and obj.status != 1:
                         cannot_use_step = False
                         break
-
                     else:
                         cannot_use_step = True
-                        break
-
-                        # print(f"PRINTING CURRENT AGENT STREET INFO: {agent.model.streets[agent.final_street][agent.final_side]}")
-
-                        # # If agent is in intersection
-                        # #   can move inside the intersection and to traffic lights even if they are red
-
-                        # # else if agent is in final street
-                        # #   can move only to shit inside final street and if a TrafficLight is not inside final street then ignore
-
-                        # if agent.inside_int is True:
-                        #     cannot_use_step =  True # can use step
-                        #     break
-                        # else:
-                        #     if obj.status == 1: # if red TrafficLight
-                        #         return
-                        #     else:
-                        #         cannot_use_step =  False # can use step
-                        #         break
-
-                        # if agent.inside_fin is True:
-
-                        #     # Check if object is in agent's final street
-                        #     obj_in_street = False
-                        #     obj_x, obj_y = obj.pos
-                        #     obj_loc = [obj_x, obj_y]
-
-                        #     for location in agent.model.streets[agent.final_street][agent.final_side]:
-                        #         if obj_loc == location:
-                        #             obj_in_street = True # there is a traffic light in final street
-                        #             break
-
-                        #     if obj_in_street is True: # if object in final street then can add it
-                        #         print(f"------------------------------------------------STREET LIGHT IN FINAL STREET AT {obj.pos}")
-                        #         print("Can add it")
-                        #         cannot_use_step = False
-                        #         break
-                        #     else:
-                        #         print(f"------------------------------------------------STREET LIGHT NOT IN FINAL STREET AT {obj.pos}")
-                        #         print("Cannot add it")
-                        #         cannot_use_step = True
-                        #         break
 
                 if cannot_use_step is True:
                     continue
@@ -312,7 +262,6 @@ def move(agent):
 
             print(f"Car with [[ pressured ]] status has these as possible steps: {possible_steps}")
 
-
             opts = []
             for steps in possible_steps:
                 cannot_use_step = False
@@ -442,57 +391,43 @@ def move(agent):
             check_crash = agent.model.grid.get_cell_list_contents(agent.pos)
             more_than_one = 0
 
-            for crashed_vehicle in check_crash:
-                if isinstance(crashed_vehicle, Sidewalk) or isinstance(crashed_vehicle, TrafficLight):
-                    pass
+            # for crashed_vehicle in check_crash:
+            #     if isinstance(crashed_vehicle, Sidewalk) or isinstance(crashed_vehicle, TrafficLight):
+            #         pass
 
-                elif isinstance(crashed_vehicle, Ambulance):
-                    more_than_one += 1
-                    print(f"Ambulance {crashed_vehicle.unique_id} has crashed!")
-                    print(f"Vehicle at {crashed_vehicle.pos} has crashed!")
-                    print(f" | -------------------- CRASH HAS OCURRED: {check_crash}")
-                    # crashed_vehicle.status = 9
+            #     elif isinstance(crashed_vehicle, Ambulance):
+            #         more_than_one += 1
 
-                    # exit(0)
+            #         # print(f"Ambulance {crashed_vehicle.unique_id} has crashed!")
+            #         # print(f"Vehicle at {crashed_vehicle.pos} has crashed!")
+            #         # print(f" | -------------------- CRASH HAS OCURRED: {check_crash}")
 
-                    # crashed_vehicle.model.grid.remove_agent(crashed_vehicle.tail)
-                    # crashed_vehicle.model.grid.remove_agent(crashed_vehicle)
-                    # crashed_vehicle.model.vh_scheduler.remove(crashed_vehicle)
+            #         crashed_vehicle.model.grid.remove_agent(crashed_vehicle.tail)
+            #         crashed_vehicle.model.grid.remove_agent(crashed_vehicle)
+            #         crashed_vehicle.model.vh_scheduler.remove(crashed_vehicle)
 
-                    # crashed_vehicle.model.crashes_num += 1
+# #                 elif isinstance(crashed_vehicle, AmbulanceTail):
+# #                     more_than_one += 1
 
-                elif isinstance(crashed_vehicle, AmbulanceTail):
-                    more_than_one += 1
+# #                     print(f"Ambulance {crashed_vehicle.unique_id} has crashed!")
+# #                     print(f"Vehicle at {crashed_vehicle.pos} has crashed!")
+# #                     print(f" | -------------------- CRASH HAS OCURRED: {check_crash}")
 
-                    print(f"Ambulance {crashed_vehicle.unique_id} has crashed!")
-                    print(f"Vehicle at {crashed_vehicle.pos} has crashed!")
-                    print(f" | -------------------- CRASH HAS OCURRED: {check_crash}")
-                    # crashed_vehicle.status = 9
+# #                     crashed_vehicle.model.grid.remove_agent(crashed_vehicle.head)
+# #                     crashed_vehicle.model.vh_scheduler.remove(crashed_vehicle.head)
+# #                     crashed_vehicle.model.grid.remove_agent(crashed_vehicle)
 
-                    # exit(0)
+            #     else:
+            #         # print(f"Vehicle {crashed_vehicle.unique_id} has crashed!")
+            #         # print(f"Vehicle at {crashed_vehicle.pos} has crashed!")
+            #         # print(f" | -------------------- CRASH HAS OCURRED: {check_crash}")
 
-                    # crashed_vehicle.model.grid.remove_agent(crashed_vehicle.head)
-                    # crashed_vehicle.model.vh_scheduler.remove(crashed_vehicle.head)
-                    # crashed_vehicle.model.grid.remove_agent(crashed_vehicle)
+            #         crashed_vehicle.model.grid.remove_agent(crashed_vehicle)
+            #         crashed_vehicle.model.vh_scheduler.remove(crashed_vehicle)
 
-                    # crashed_vehicle.model.crashes_num += 1
-
-                else:
-                    print(f"Vehicle {crashed_vehicle.unique_id} has crashed!")
-                    print(f"Vehicle at {crashed_vehicle.pos} has crashed!")
-                    print(f" | -------------------- CRASH HAS OCURRED: {check_crash}")
-
-                    # crashed_vehicle.status = 9
-                    # exit(0)
-
-                    # crashed_vehicle.model.grid.remove_agent(crashed_vehicle)
-                    # crashed_vehicle.model.vh_scheduler.remove(crashed_vehicle)
-
-                    # crashed_vehicle.model.crashes_num += 1
-
-            if more_than_one > 1:
-                print(f"Number of cars found at the same position given {agent.pos} : {more_than_one}")
-                exit(0)
+            # if more_than_one > 0:
+            #     for i in range(more_than_one):
+            #         crashed_vehicle.model.crashes_num += 1
 
 
     # MOVING AMBULANCE
@@ -1195,131 +1130,128 @@ class IntersectionModel(mesa.Model):
         random.shuffle(self.spawn)
 
         for location in self.spawn:
+
             if self.curr_cars == self.max_cars:
                 return
 
             spawn_prob = round(random.uniform(0, 1), 2)
 
             if spawn_prob > .30:
-                x, y = location # extract the location
-                spawn_pos = [x, y]
 
-                agent = Car(self.unique_ids, self) # creates agent
+                check_spawn = self.grid.get_cell_list_contents(tuple(location))
 
-                self.vh_scheduler.add(agent) # adds agent to scheduler
-                self.grid.place_agent(agent, (x, y))
-
-                status_prob = round(random.uniform(0, 1), 2)
-                status_debug = ""
-
-                # Set agent status
-                if .80 < status_prob <= .98:
-                    if self.debug is True:
-                        status_debug = "[ pressured ]"
-                    agent.status = 1
-                    agent.velocity = 1
-                elif status_prob > .98:
-                    if self.debug is True:
-                        status_debug = "[ desesperated ]"
-                    agent.status = 2
-                    agent.velocity = 2
+                if len(check_spawn) > 0: # if there is already an agent in the location I want to use to spawn
+                    continue # check next location
                 else:
-                    if self.debug is True:
-                        status_debug = "[ normal ]"
+                    x, y = location # extract the location
+                    spawn_pos = [x, y]
+                    agent = Car(self.unique_ids, self) # creates agent
+                    # Set crazy timer
+                    agent.crazy_timer = random.randrange(20, 30)
+                    self.vh_scheduler.add(agent) # adds agent to scheduler
+                    self.grid.place_agent(agent, (x, y))
+                    status_prob = round(random.uniform(0, 1), 2)
+                    status_debug = ""
+                    # Set agent status
+                    if .80 < status_prob <= .98:
+                        if self.debug is True:
+                            status_debug = "[ pressured ]"
+                        agent.status = 1
                         agent.velocity = 1
-
-                # Set crazy timer
-                agent.crazy_timer = random.randrange(20, 30)
-
-                # Set cars' destination
-                copy_of_dispawn = self.dispawn
-                random.shuffle(copy_of_dispawn)
-
-                for destination in copy_of_dispawn:
-                    if (get_distance(location, destination) < 20):
-                        continue
+                    elif status_prob > .98:
+                        if self.debug is True:
+                            status_debug = "[ desesperated ]"
+                        agent.status = 2
+                        agent.velocity = 2
                     else:
-                        agent.final_des = destination
-
-                        for key in self.streets:
-                            for vals in self.streets[key]:
-                                for side in self.streets[key][vals]:
-
-                                    if agent.final_des == side:
-                                        agent.final_street = key # this will be which street
-                                        agent.final_side = vals # this will be which side of the street
-
-                        # get current street name
-                        for key in self.streets:
-                            for vals in self.streets[key]:
-                                for side in self.streets[key][vals]:
-
-                                    if spawn_pos == side:
-                                        agent.curr_street = key # this will be which street
-                                        agent.curr_side = vals # this will be which side of the street
-                        break
-
-                if self.debug is True:
-                    print(f" [[ Car ]] spawned at ({x}. {y}) with status of {status_debug}")
-                    print(f"    ::- Will go to {agent.final_des}")
-
-                self.unique_ids += 1
-                self.curr_cars += 1
+                        if self.debug is True:
+                            status_debug = "[ normal ]"
+                            agent.velocity = 1
+                    # Set cars' destination
+                    copy_of_dispawn = self.dispawn
+                    random.shuffle(copy_of_dispawn)
+                    for destination in copy_of_dispawn:
+                        if (get_distance(location, destination) < 20):
+                            continue
+                        else:
+                            agent.final_des = destination
+                            for key in self.streets:
+                                for vals in self.streets[key]:
+                                    for side in self.streets[key][vals]:
+                                        if agent.final_des == side:
+                                            agent.final_street = key # this will be which street
+                                            agent.final_side = vals # this will be which side of the street
+                            # get current street name
+                            for key in self.streets:
+                                for vals in self.streets[key]:
+                                    for side in self.streets[key][vals]:
+                                        if spawn_pos == side:
+                                            agent.curr_street = key # this will be which street
+                                            agent.curr_side = vals # this will be which side of the street
+                            break
+                    if self.debug is True:
+                        print(f" [[ Car ]] spawned at ({x}. {y}) with status of {status_debug}")
+                        print(f"    ::- Will go to {agent.final_des}")
+                    self.unique_ids += 1
+                    self.curr_cars += 1
 
             elif spawn_prob < .20:
-                x, y = location # extract the location
-                spawn_pos = [x, y]
 
-                # SPAWNING TAIL
-                tail = AmbulanceTail(self.unique_ids, self) # creates agent
-                self.unique_ids += 1
-                agent = Ambulance(self.unique_ids, tail, self) # creates agent
-                tail.head = agent
+                check_spawn = self.grid.get_cell_list_contents(tuple(location))
 
-                self.vh_scheduler.add(agent) # adds agent to scheduler
+                if len(check_spawn) > 0: # if there is already an agent in the location I want to use to spawn
+                    continue # check next location
+                else:
+                    x, y = location # extract the location
+                    spawn_pos = [x, y]
 
-                self.grid.place_agent(tail, (x, y))
-                self.grid.place_agent(agent, (x, y))
+                    # SPAWNING TAIL
+                    tail = AmbulanceTail(self.unique_ids, self) # creates agent
+                    self.unique_ids += 1
+                    agent = Ambulance(self.unique_ids, tail, self) # creates agent
+                    tail.head = agent
 
-                # Set cars' destination
-                copy_of_dispawn = self.dispawn
-                random.shuffle(copy_of_dispawn)
+                    self.vh_scheduler.add(agent) # adds agent to scheduler
 
-                for destination in copy_of_dispawn:
-                    if (get_distance(location, destination) < 20):
-                        continue
-                    else:
-                        agent.final_des = destination
+                    self.grid.place_agent(tail, (x, y))
+                    self.grid.place_agent(agent, (x, y))
 
-                        for key in self.streets:
-                            for vals in self.streets[key]:
-                                for side in self.streets[key][vals]:
+                    # Set cars' destination
+                    copy_of_dispawn = self.dispawn
+                    random.shuffle(copy_of_dispawn)
 
-                                    if agent.final_des == side:
-                                        agent.final_street = key # this will be which street
-                                        agent.final_side = vals # this will be which side of the street
+                    for destination in copy_of_dispawn:
+                        if (get_distance(location, destination) < 20):
+                            continue
+                        else:
+                            agent.final_des = destination
 
-                        # get current street name
-                        for key in self.streets:
-                            for vals in self.streets[key]:
-                                for side in self.streets[key][vals]:
+                            for key in self.streets:
+                                for vals in self.streets[key]:
+                                    for side in self.streets[key][vals]:
 
-                                    if spawn_pos == side:
-                                        agent.curr_street = key # this will be which street
-                                        agent.curr_side = vals # this will be which side of the street
-                        break
+                                        if agent.final_des == side:
+                                            agent.final_street = key # this will be which street
+                                            agent.final_side = vals # this will be which side of the street
 
-                if self.debug is True:
-                    print(f" [[ Ambulance ]] spawned at ({x}. {y}) with status of {agent.status}")
-                    print(f"    ::- Will go to {agent.final_des}")
+                            # get current street name
+                            for key in self.streets:
+                                for vals in self.streets[key]:
+                                    for side in self.streets[key][vals]:
 
-                self.unique_ids += 1
-                self.curr_cars += 1
+                                        if spawn_pos == side:
+                                            agent.curr_street = key # this will be which street
+                                            agent.curr_side = vals # this will be which side of the street
+                            break
 
-                move(agent)
-            else:
-                continue
+                    if self.debug is True:
+                        print(f" [[ Ambulance ]] spawned at ({x}. {y}) with status of {agent.status}")
+                        print(f"    ::- Will go to {agent.final_des}")
 
+                    self.unique_ids += 1
+                    self.curr_cars += 1
+
+        self.vh_scheduler.step()
 
     def check_inter_empty(self):
         vehicles = [agents for agents in self.vh_scheduler.agents]
