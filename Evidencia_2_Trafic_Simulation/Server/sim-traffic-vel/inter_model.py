@@ -1013,7 +1013,7 @@ class IntersectionModel(mesa.Model):
 
             spawn_prob = round(random.uniform(0, 1), 2)
 
-            if spawn_prob > .03:
+            if spawn_prob >= .03:
 
                 check_spawn = self.grid.get_cell_list_contents(tuple(location))
 
