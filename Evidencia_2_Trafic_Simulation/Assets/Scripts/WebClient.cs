@@ -8,6 +8,7 @@ using UnityEngine.Networking;
 [Serializable]
 public struct CarInfo
 {
+    public int id;
     public float[] pos;
     public string name;
 }
@@ -26,15 +27,30 @@ struct Step
 
 public class WebClient : MonoBehaviour
 {
-    public GameObject[] cars;
-    public GameObject[] tfs;
+    public GameObject[] carPrefabs;
+    public GameObject ambPrefab;
+    GameObject[] carsInstances;
+    GameObject[] tfInstances;
 
     Step step;
+    int[] ids;
     bool firstStep = true;
     bool received = false;
     float chrono = 0.0f;
+
     Vector3[] moveVects;
     public float scale = 2.0f;
+    public float fps;
+
+    int index_by_id(int id)
+    {
+        for (int i = 0; i < ids.Length; i++)
+        {
+            if (ids[i] == id)
+                return i;
+        }
+        return -1;
+    }
 
     // IEnumerator - yield return
     IEnumerator SendData()
@@ -62,24 +78,38 @@ public class WebClient : MonoBehaviour
             else
             {
                 step = JsonUtility.FromJson<Step>(www.downloadHandler.text);
-                Debug.Log("<-------RESPONSE------->");
+                
                 if (!firstStep)
                 {
-                    moveVects = new Vector3[cars.Length];
-                    for (int i = 0; i < cars.Length; i++)
+                moveVects = new Vector3[carsInstances.Length];
+                for (int i = 0; i < carsInstances.Length; i++)
+                {
+                    // Match id with car if it exists
+                    int index = -1;
+                    for (int j = 0; j < step.cars.Length; j++)
                     {
-                        Vector3 goal = new Vector3(step.cars[i].pos[0] * scale, 0.5f, step.cars[i].pos[1] * scale);
-                        Vector3 displacement = goal - cars[i].transform.position;
-                        if (displacement.magnitude > 3.0f * scale)
-                        {
-                            displacement.Normalize();
-                            cars[i].transform.position = goal + displacement * 3;
-                            displacement = goal - cars[i].transform.position;
-                        }
-                        moveVects[i] = displacement;
+                        if (step.cars[j].id == ids[i])
+                            index = j;
+                    }
+                    // If match exists then measure displacement
+                    if (index > -1)
+                    {
+                        Vector3 goal = new Vector3(step.cars[index].pos[0], 0.5f, step.cars[index].pos[1]);
+                        moveVects[i] = goal - carsInstances[i].transform.position;
+                    }
+                    else
+                    {
+                        moveVects[i] = Vector3.zero;
                     }
                 }
+                }
+                else
+                {
+                    firstStep = false;
+                }
+
                 received = true;
+                Debug.Log("<-------RESPONSE------->");
             }
         }
     }
@@ -87,6 +117,7 @@ public class WebClient : MonoBehaviour
     // Start is called before the first frame update
     async void Start()
     {
+        carsInstances = new GameObject[0];
         #if UNITY_EDITOR
         StartCoroutine(SendData());
         #endif
@@ -95,77 +126,45 @@ public class WebClient : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (firstStep)
-        {
-            if (received)
-            {
-                firstStep = false;
-                for (int i = 0; i < tfs.Length; i++)
-                {
-                    Vector3 pos = new Vector3(step.tf[i].pos[0] * scale, 2.5f, step.tf[i].pos[1] * scale);
-                    tfs[i].transform.position = pos;
-                    if (step.tf[i].status == "red")
-                    {
-                        tfs[i].GetComponent<MeshRenderer>().material.SetColor("_Color", Color.red);
-                    }
-                    else if (step.tf[i].status == "yellow")
-                    {
-                        tfs[i].GetComponent<MeshRenderer>().material.SetColor("_Color", Color.yellow);
-                    }
-                    else if (step.tf[i].status == "green")
-                    {
-                        tfs[i].GetComponent<MeshRenderer>().material.SetColor("_Color", Color.green);
-                    }
-                }
-                for (int i = 0; i < cars.Length; i++)
-                {
-                    Vector3 pos = new Vector3(step.cars[i].pos[0] * scale, 0.5f, step.cars[i].pos[1] * scale);
-                    cars[i].transform.position = pos;
-                }
-                #if UNITY_EDITOR
-                StartCoroutine(SendData());
-                #endif
-            }
-            return;
-        }
         if (received)
         {
-            // Debug.Log("Chrono: " + chrono);
-            chrono += Time.deltaTime;
-            double diff = 0.0f;
-            for (int i = 0; i < cars.Length; i++)
-            {
-                cars[i].transform.position += moveVects[i] * Time.deltaTime;
-                diff += (new Vector3(step.cars[i].pos[0] * scale, 0.5f, step.cars[i].pos[1] * scale) - cars[i].transform.position).magnitude;
-            }
-            diff = diff / cars.Length;
-            if (chrono > 1.0f)
+            // Assign positions and get movement vectors
+            if (firstStep || chrono > 1 / fps)
             {
                 received = false;
-                for (int i = 0; i < tfs.Length; i++)
+                chrono = 0.0f;
+                foreach (GameObject car in carsInstances)
                 {
-                    if (step.tf[i].status == "red")
-                    {
-                        tfs[i].GetComponent<MeshRenderer>().material.SetColor("_Color", Color.red);
-                    }
-                    else if (step.tf[i].status == "yellow")
-                    {
-                        tfs[i].GetComponent<MeshRenderer>().material.SetColor("_Color", Color.yellow);
-                    }
-                    else if (step.tf[i].status == "green")
-                    {
-                        tfs[i].GetComponent<MeshRenderer>().material.SetColor("_Color", Color.green);
-                    }
+                    Destroy(car, 0.0f);
                 }
-                for (int i = 0; i < cars.Length; i++)
+                carsInstances = new GameObject[step.cars.Length];
+                ids = new int[step.cars.Length];
+                for (int i = 0; i < carsInstances.Length; i++)
                 {
-                    Vector3 pos = new Vector3(step.cars[i].pos[0] * scale, 0.5f, step.cars[i].pos[1] * scale);
-                    cars[i].transform.position = pos;
+                    Vector3 pos = new Vector3(step.cars[i].pos[0], 0.5f, step.cars[i].pos[1]);
+                    Quaternion rot = new Quaternion(0,0,0,1);
+                    if (step.cars[i].name == "Car")
+                    {
+                        carsInstances[i] = GameObject.Instantiate(carPrefabs[0], pos, rot);
+                    }
+                    else
+                    {
+                        carsInstances[i] = GameObject.Instantiate(ambPrefab, pos, rot);
+                    }
+                    ids[i] = step.cars[i].id;
                 }
                 #if UNITY_EDITOR
                 StartCoroutine(SendData());
                 #endif
-                chrono = 0.0f;
+            }
+            // Move
+            else
+            {
+                chrono += Time.deltaTime;
+                for (int i = 0; i < carsInstances.Length; i++)
+                {
+                    carsInstances[i].transform.position += moveVects[i] * Time.deltaTime * fps;
+                }
             }
         }
     }
