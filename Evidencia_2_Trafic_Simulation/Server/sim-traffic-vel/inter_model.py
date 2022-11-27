@@ -51,44 +51,31 @@ def move(agent):
             cannot_use_step = False
             searching = agent.model.grid.get_cell_list_contents([steps])
 
-            # [tf, car, am]
-
             if searching == []:
                 opts.append(steps)
             elif searching[0].unique_id == agent.unique_id:
                 opts.append(steps)
             else:
                 for obj in searching:
-                    # if isinstance(obj, Sidewalk) or isinstance(obj, Car) or isinstance(obj, Ambulance) or isinstance(obj, AmbulanceTail):
-                    #     # If looking at direction of Car you find a vehicle then stop return
-                    #     cannot_use_step = True
-                    #     break # cannot use this stuff
-
                     if isinstance(obj, TrafficLight) and obj.status != 1:
                         cannot_use_step = False
                         break
                     else:
                         cannot_use_step = True
+                        break
 
                 if cannot_use_step is True:
                     continue
                 else:
                     opts.append(steps)
 
-        print(f"Opts found by [[ normal car ]] for moving: {opts}")
+        # print(f"Opts found by [[ normal car ]] for moving: {opts}")
 
         # After adding all possible cells filtered agent-wise, check if cells are in either the current street as agent or in the intersection array
         # But first, check if any opts left, other wise only return and set speed of the agent to 0
         if len(opts) == 0:
             agent.velocity = 0
             return
-
-        # Before generating the final opts check if agent itself is inside intersection or is not.
-        # If in intersection already only use street.
-        # If in street only use intersection coords
-        # in_inter = False # var to check if agent is already in the intersection
-        # x_curr, y_curr = agent.pos
-        # curr_loc = [x_curr, y_curr]
 
         in_inter = False
         in_street = False
@@ -148,72 +135,26 @@ def move(agent):
                     opts.append(steps)
                 else:
                     for obj in searching:
-                        if isinstance(obj, Sidewalk) or isinstance(obj, Car) or isinstance(obj, Ambulance) or isinstance(obj, AmbulanceTail):
-                            # If looking at direction of Car you find a vehicle then stop return
+
+                        if isinstance(obj, TrafficLight) and obj.status != 1:
+                            cannot_use_step = False
+                            break
+                        else:
                             cannot_use_step = True
-                            break # cannot use this stuff
-
-                        elif isinstance(obj, TrafficLight):
-                            print(f"PRINTING CURRENT AGENT STREET INFO: {agent.model.streets[agent.final_street][agent.final_side]}")
-
-                            # If agent is in intersection
-                            #   can move inside the intersection and to traffic lights even if they are red
-
-                            # else if agent is in final street
-                            #   can move only to shit inside final street and if a TrafficLight is not inside final street then ignore
-
-                            if agent.inside_int is True:
-                                cannot_use_step =  False # can use step
-                                break
-                            else:
-                                if obj.status == 1: # if red TrafficLight
-                                    return
-                                else:
-                                    cannot_use_step =  False # can use step
-                                    break
-
-                            if agent.inside_fin is True:
-
-                                # Check if object is in agent's final street
-                                obj_in_street = False
-                                obj_x, obj_y = obj.pos
-                                obj_loc = [obj_x, obj_y]
-
-                                for location in agent.model.streets[agent.final_street][agent.final_side]:
-                                    if obj_loc == location:
-                                        obj_in_street = True # there is a traffic light in final street
-                                        break
-
-                                if obj_in_street is True: # if object in final street then can add it
-                                    print(f"------------------------------------------------STREET LIGHT IN FINAL STREET AT {obj.pos}")
-                                    print("Can add it")
-                                    cannot_use_step = False
-                                    break
-                                else:
-                                    print(f"------------------------------------------------STREET LIGHT NOT IN FINAL STREET AT {obj.pos}")
-                                    print("Cannot add it")
-                                    cannot_use_step = True
-                                    break
+                            break
 
                     if cannot_use_step is True:
                         continue
                     else:
                         opts.append(steps)
 
-            print(f"Opts found by [[ pressured car ]] for moving: {opts}")
+            # print(f"Opts found by [[ pressured car ]] for moving: {opts}")
 
             # After adding all possible cells filtered agent-wise, check if cells are in either the current street as agent or in the intersection array
             # But first, check if any opts left, other wise only return and set speed of the agent to 0
             if len(opts) == 0:
                 agent.velocity = 0
                 return
-
-            # Before generating the final opts check if agent itself is inside intersection or is not.
-            # If in intersection already only use street.
-            # If in street only use intersection coords
-            # in_inter = False # var to check if agent is already in the intersection
-            # x_curr, y_curr = agent.pos
-            # curr_loc = [x_curr, y_curr]
 
             in_inter = False
             in_street = False
@@ -260,7 +201,7 @@ def move(agent):
                 agent.pos, moore=True, include_center=True
             )
 
-            print(f"Car with [[ pressured ]] status has these as possible steps: {possible_steps}")
+            # print(f"Car with [[ desesperated ]] status has these as possible steps: {possible_steps}")
 
             opts = []
             for steps in possible_steps:
@@ -274,76 +215,25 @@ def move(agent):
                 else:
                     for obj in searching:
 
-                        if isinstance(obj, Sidewalk) or isinstance(obj, Car) or isinstance(obj, Ambulance) or isinstance(obj, AmbulanceTail):
-                            # If looking at direction of Car you find a vehicle then stop return
-                            if will_ignore is True:
-                                cannot_use_step = False
-                            else:
-                                cannot_use_step = True
-
-                            break # cannot use this stuff
-
-                        elif isinstance(obj, TrafficLight):
-                            print(f"PRINTING CURRENT AGENT STREET INFO: {agent.model.streets[agent.final_street][agent.final_side]}")
-
-                            # If agent is in intersection
-                            #   can move inside the intersection and to traffic lights even if they are red
-
-                            # else if agent is in final street
-                            #   can move only to shit inside final street and if a TrafficLight is not inside final street then ignore
-
-                            if agent.inside_int is True:
-                                cannot_use_step =  False # can use step
-                                break
-                            else:
-                                if obj.status == 1: # if red TrafficLight
-                                    return
-                                else:
-                                    cannot_use_step =  False # can use step
-                                    break
-
-                            if agent.inside_fin is True:
-
-                                # Check if object is in agent's final street
-                                obj_in_street = False
-                                obj_x, obj_y = obj.pos
-                                obj_loc = [obj_x, obj_y]
-
-                                for location in agent.model.streets[agent.final_street][agent.final_side]:
-                                    if obj_loc == location:
-                                        obj_in_street = True # there is a traffic light in final street
-                                        break
-
-                                if obj_in_street is True: # if object in final street then can add it
-                                    print(f"------------------------------------------------STREET LIGHT IN FINAL STREET AT {obj.pos}")
-                                    print("Can add it")
-                                    cannot_use_step = False
-                                    break
-                                else:
-                                    print(f"------------------------------------------------STREET LIGHT NOT IN FINAL STREET AT {obj.pos}")
-                                    print("Cannot add it")
-                                    cannot_use_step = True
-                                    break
+                        if isinstance(obj, TrafficLight) and obj.status != 1:
+                            cannot_use_step = False
+                            break
+                        else:
+                            cannot_use_step = True
+                            break
 
                     if cannot_use_step is True:
                         continue
                     else:
                         opts.append(steps)
 
-            print(f"Opts found by [[ desesperated car ]] for moving: {opts}")
+            # print(f"Opts found by [[ desesperated car ]] for moving: {opts}")
 
             # After adding all possible cells filtered agent-wise, check if cells are in either the current street as agent or in the intersection array
             # But first, check if any opts left, other wise only return and set speed of the agent to 0
             if len(opts) == 0:
                 agent.velocity = 0
                 return
-
-            # Before generating the final opts check if agent itself is inside intersection or is not.
-            # If in intersection already only use street.
-            # If in street only use intersection coords
-            # in_inter = False # var to check if agent is already in the intersection
-            # x_curr, y_curr = agent.pos
-            # curr_loc = [x_curr, y_curr]
 
             in_inter = False
             in_street = False
@@ -432,7 +322,6 @@ def move(agent):
 
     # MOVING AMBULANCE
     elif agent.status == 3: # is ambulance
-        # print(f"Ambulance in current position {agent.pos}...")
 
         for i in range(4):
             # Get head position
@@ -461,15 +350,13 @@ def move(agent):
                     opts.append(steps)
                 else:
                     for obj in searching:
+
                         if isinstance(obj, Sidewalk) or isinstance(obj, Car) or isinstance(obj, Ambulance) or isinstance(obj, AmbulanceTail):
-                            # If looking at direction of Car you find a vehicle then stop return
-                            # print(f":::: ----- Car, wall or other ambulance found so cannot go into this step! {steps}")
                             cannot_use_step = True
                             break # cannot use this stuff
 
                         elif isinstance(obj, TrafficLight):
                             cannot_use_step = False
-                            # print(":::: ----- Traffic light by ambulance found!!")
                             break
 
                     if cannot_use_step is True:
@@ -485,13 +372,6 @@ def move(agent):
                 agent.velocity = 0
                 return
 
-            # Before generating the final opts check if agent itself is inside intersection or is not.
-            # If in intersection already only use street.
-            # If in street only use intersection coords
-            # in_inter = False # var to check if agent is already in the intersection
-            # x_curr, y_curr = agent.pos
-            # curr_loc = [x_curr, y_curr]
-
             in_inter = False
             in_street = False
             final_opts = []
@@ -501,23 +381,22 @@ def move(agent):
                 for location in agent.model.streets[agent.curr_street][agent.curr_side]:
                     if location == next_loc:
                         in_street = True
-                        # print(f"Current value {location} is inside current street")
                         final_opts.append(next_loc)
                         break
+
                 # Or if in intersection
                 for inter in agent.model.intersection:
                     if next_loc == inter:
                         in_iter = True
-                        # print(f"Current value {inter} inside intersection")
                         final_opts.append(next_loc)
                         break
 
                 for location in agent.model.streets[agent.final_street][agent.final_side]:
                     if location == next_loc:
                         in_street = True
-                        # print(f"Current value {location} is inside next street")
                         final_opts.append(next_loc)
                         break
+
             min_val = 100000
             best = []
             for locations in final_opts:
@@ -530,15 +409,13 @@ def move(agent):
             if (len(best) > 1):
                 agent.model.grid.move_agent(agent, tuple(e for e in best))
 
-            # print(f"-:::: [... has moved to new position {best}. Now will move the associated tail {agent.tail.unique_id} ]")
-
             if best != curr_pos: # if did not move
                 # Move ambulance tail to head
                 tail_inst = agent.tail # instance of tail
                 agent.model.grid.move_agent(tail_inst, tuple(e for e in curr_pos))
                 # print(f"-:::: [ Associated tail {agent.tail.unique_id} has moved to former position {curr_pos}")
 
-    print(f"Vehicle ended at position {agent.pos}\n\n")
+    #print(f"Vehicle ended at position {agent.pos}\n\n")
 
 # Some useful methods that are not dependent of an agent
 def get_distance(p, q):
@@ -1136,7 +1013,7 @@ class IntersectionModel(mesa.Model):
 
             spawn_prob = round(random.uniform(0, 1), 2)
 
-            if spawn_prob > .30:
+            if spawn_prob > .03:
 
                 check_spawn = self.grid.get_cell_list_contents(tuple(location))
 
@@ -1195,7 +1072,7 @@ class IntersectionModel(mesa.Model):
                     self.unique_ids += 1
                     self.curr_cars += 1
 
-            elif spawn_prob < .20:
+            elif spawn_prob < .03:
 
                 check_spawn = self.grid.get_cell_list_contents(tuple(location))
 
@@ -1263,7 +1140,6 @@ class IntersectionModel(mesa.Model):
 
                 if compare == location:
                     return False
-
         return True
 
 
