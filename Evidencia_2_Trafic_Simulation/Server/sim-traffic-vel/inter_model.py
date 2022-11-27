@@ -4,38 +4,47 @@ import random
 import math
 
 def move(agent):
+    print("\nMOVING")
     will_ignore = False
 
     if isinstance(agent, Ambulance):
         pass
     else:
-        if agent.crazy_timer == 0: # we are out of patience
+        print(f"Current crazy timer val is {agent.crazy_timer}")
+
+        if agent.crazy_timer <= 0: # we are out of patience
             if agent.status == 1:
                 agent.status = 2
+                agent.crazy_timer = random.randrange(10, 20)
+
             elif agent.status == 2:
                 will_ignore = True
 
-            agent.crazy_timer = random.randrange(20, 30)
+    check_crash = agent.model.grid.get_cell_list_contents(agent.pos)
+    del_arr = []
 
+    if len(check_crash) > 2: # there are more than one agent in the same cell
+            # Another object in the same cell
 
-    if agent.inside_int is False:
-        curr_x, curr_y = agent.pos
-        curr_pos = [curr_x, curr_y]
+        for obj in check_crash:
+            if isinstance(obj, Car) or isinstance(obj, Ambulance) or isinstance(obj, AmbulanceTail):
+                del_arr.append(obj)
 
-        for inter in agent.model.intersection:
-            if curr_pos == inter:
-                agent.inside_int = True
-                break
+        if len(del_arr) > 1:
+            print(f"Ocurred a crash with {len(del_arr)} number of vehicles")
+            agent.model.crashes_num += 1
 
-    if agent.inside_fin is False:
-        curr_x, curr_y = agent.pos
-        curr_pos = [curr_x, curr_y]
+            for agent_to_del in del_arr:
+                if isinstance(agent_to_del, Ambulance) or isinstance(agent_to_del, Car):
+                    agent.model.vh_scheduler.remove(agent_to_del)
+                    agent.model.grid.remove_agent(agent_to_del)
+                else:
+                    agent.model.grid.remove_agent(agent_to_del.head)
+                    agent.model.vh_scheduler.remove(agent_to_del.head)
+                    agent.model.grid.remove_agent(agent_to_del)
 
-        for location in agent.model.streets[agent.final_street][agent.final_side]:
-            print(location)
-            if curr_pos == location:
-                agent.inside_fin = True
-                break
+                return
+
 
     # 0 is normal, 1 is pressured, 2 is desesperated, 3 is ambulance
     if agent.status == 0:
@@ -139,6 +148,11 @@ def move(agent):
                         if isinstance(obj, TrafficLight) and obj.status != 1:
                             cannot_use_step = False
                             break
+                        elif isinstance(obj, TrafficLight) and obj.status == 1:
+                            print(f"Current [[ pressured ]] agent has decreased its crazy_timer value from {agent.crazy_timer} to {agent.crazy_timer - 1}")
+                            agent.crazy_timer -= 1
+                            cannot_use_step = True
+                            break
                         else:
                             cannot_use_step = True
                             break
@@ -193,6 +207,7 @@ def move(agent):
             if (len(best) > 1):
                 agent.model.grid.move_agent(agent, tuple(e for e in best))
 
+    # STATUS 2
     elif agent.status == 2:
 
         for i in range(agent.velocity):
@@ -214,10 +229,17 @@ def move(agent):
                     opts.append(steps)
                 else:
                     for obj in searching:
-
                         if isinstance(obj, TrafficLight) and obj.status != 1:
                             cannot_use_step = False
                             break
+                        elif isinstance(obj, TrafficLight) and obj.status == 1:
+                            if will_ignore is True:
+                                cannot_use_step = False
+                                break
+                            else:
+                                agent.crazy_timer -= 1
+                                cannot_use_step = True
+                                break
                         else:
                             cannot_use_step = True
                             break
@@ -281,43 +303,6 @@ def move(agent):
             check_crash = agent.model.grid.get_cell_list_contents(agent.pos)
             more_than_one = 0
 
-            # for crashed_vehicle in check_crash:
-            #     if isinstance(crashed_vehicle, Sidewalk) or isinstance(crashed_vehicle, TrafficLight):
-            #         pass
-
-            #     elif isinstance(crashed_vehicle, Ambulance):
-            #         more_than_one += 1
-
-            #         # print(f"Ambulance {crashed_vehicle.unique_id} has crashed!")
-            #         # print(f"Vehicle at {crashed_vehicle.pos} has crashed!")
-            #         # print(f" | -------------------- CRASH HAS OCURRED: {check_crash}")
-
-            #         crashed_vehicle.model.grid.remove_agent(crashed_vehicle.tail)
-            #         crashed_vehicle.model.grid.remove_agent(crashed_vehicle)
-            #         crashed_vehicle.model.vh_scheduler.remove(crashed_vehicle)
-
-# #                 elif isinstance(crashed_vehicle, AmbulanceTail):
-# #                     more_than_one += 1
-
-# #                     print(f"Ambulance {crashed_vehicle.unique_id} has crashed!")
-# #                     print(f"Vehicle at {crashed_vehicle.pos} has crashed!")
-# #                     print(f" | -------------------- CRASH HAS OCURRED: {check_crash}")
-
-# #                     crashed_vehicle.model.grid.remove_agent(crashed_vehicle.head)
-# #                     crashed_vehicle.model.vh_scheduler.remove(crashed_vehicle.head)
-# #                     crashed_vehicle.model.grid.remove_agent(crashed_vehicle)
-
-            #     else:
-            #         # print(f"Vehicle {crashed_vehicle.unique_id} has crashed!")
-            #         # print(f"Vehicle at {crashed_vehicle.pos} has crashed!")
-            #         # print(f" | -------------------- CRASH HAS OCURRED: {check_crash}")
-
-            #         crashed_vehicle.model.grid.remove_agent(crashed_vehicle)
-            #         crashed_vehicle.model.vh_scheduler.remove(crashed_vehicle)
-
-            # if more_than_one > 0:
-            #     for i in range(more_than_one):
-            #         crashed_vehicle.model.crashes_num += 1
 
 
     # MOVING AMBULANCE
@@ -333,11 +318,11 @@ def move(agent):
                 agent.pos, moore=True, include_center=True
             )
 
-            if agent.inside_int is False:
-                for inter in agent.model.intersection:
-                    if curr_pos == inter:
-                        agent.inside_int = True
-                        break
+            # if agent.inside_int is False:
+            #     for inter in agent.model.intersection:
+            #         if curr_pos == inter:
+            #             agent.inside_int = True
+            #             break
 
             opts = []
             for steps in possible_steps:
@@ -478,12 +463,10 @@ class Ambulance(mesa.Agent): # head
 
         self.final_des = []
 
-        self.inside_int = False
-        self.inside_fin = False
-
         self.tail = tail
 
     def step(self):
+        # Check for self if another object is in the sane cell
         des_x, des_y = self.pos
         curr_pos = [des_x, des_y]
 
@@ -520,9 +503,6 @@ class Car(mesa.Agent):
         self.final_side = ""
 
         self.final_des = []
-
-        self.inside_int = False
-        self.inside_fin = False
 
         self.crazy_timer = 0
 
@@ -1023,8 +1003,10 @@ class IntersectionModel(mesa.Model):
                     x, y = location # extract the location
                     spawn_pos = [x, y]
                     agent = Car(self.unique_ids, self) # creates agent
+
                     # Set crazy timer
                     agent.crazy_timer = random.randrange(20, 30)
+
                     self.vh_scheduler.add(agent) # adds agent to scheduler
                     self.grid.place_agent(agent, (x, y))
                     status_prob = round(random.uniform(0, 1), 2)
