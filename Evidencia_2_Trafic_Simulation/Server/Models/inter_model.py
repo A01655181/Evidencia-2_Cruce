@@ -1129,7 +1129,6 @@ class IntersectionModel(mesa.Model):
                         self.time = 0
                         self.vel_cycle = False
                         self.yellow_light = False
-                        self.tl_scheduler.step() # move vehicles
                         return
                     else:
                         self.prio.pop(0)
