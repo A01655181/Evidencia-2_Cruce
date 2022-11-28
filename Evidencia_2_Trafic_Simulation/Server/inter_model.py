@@ -38,10 +38,12 @@ def move(agent):
                 if isinstance(agent_to_del, Ambulance) or isinstance(agent_to_del, Car):
                     agent.model.vh_scheduler.remove(agent_to_del)
                     agent.model.grid.remove_agent(agent_to_del)
+                    agent.model.curr_cars -= 1
                 else:
                      agent.model.grid.remove_agent(agent_to_del.head)
                      agent.model.vh_scheduler.remove(agent_to_del.head)
                      agent.model.grid.remove_agent(agent_to_del)
+                     agent.model.curr_cars -= 1
                 return
 
 

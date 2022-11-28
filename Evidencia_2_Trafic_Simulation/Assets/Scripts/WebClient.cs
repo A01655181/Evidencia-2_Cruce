@@ -27,6 +27,7 @@ struct Step
 
 public class WebClient : MonoBehaviour
 {
+    public static WebClient instance;
     public GameObject[] carPrefabs;
     public GameObject ambPrefab;
     GameObject[] carsInstances;
@@ -34,11 +35,14 @@ public class WebClient : MonoBehaviour
 
     Step step;
     int[] ids;
+    int[] cached_ids;
     bool firstStep = true;
     bool received = false;
     float chrono = 0.0f;
 
     Vector3[] moveVects;
+    float[] cached_rot_angles;
+    float[] rot_angles;
     public float scale = 2.0f;
     public float fps;
 
@@ -50,6 +54,48 @@ public class WebClient : MonoBehaviour
                 return i;
         }
         return -1;
+    }
+
+    float rotation(Vector3 move)
+    {
+        float res = 90.0f;
+
+        if (move.x > 0) // Moves Right
+        {
+            if (move.z > 0)
+            {
+                res += 315.0f;
+            }
+            else if (move.z < 0)
+            {
+                res += 45.0f;
+            }            
+        }
+        else if (move.x < 0) // Moves Left
+        {
+            res += 180.0f;
+            if (move.z > 0)
+            {
+                res += 45.0f;
+            }
+            else if (move.z < 0)
+            {
+                res += 315.0f;
+            }
+        }
+        else // Moves Vertically
+        {
+            if (move.z > 0)
+            {
+                res += 270.0f;
+            }
+            else if (move.z < 0)
+            {
+                res += 90.0f;
+            }
+        }
+
+        return res;
     }
 
     // IEnumerator - yield return
@@ -78,46 +124,88 @@ public class WebClient : MonoBehaviour
             else
             {
                 step = JsonUtility.FromJson<Step>(www.downloadHandler.text);
+                bool remain_still = true;
+                // Debug.Log(step.cars.Length);
                 
                 if (!firstStep)
                 {
-                moveVects = new Vector3[carsInstances.Length];
-                for (int i = 0; i < carsInstances.Length; i++)
-                {
-                    // Match id with car if it exists
-                    int index = -1;
-                    for (int j = 0; j < step.cars.Length; j++)
+                    moveVects = new Vector3[carsInstances.Length];
+                    rot_angles = new float[carsInstances.Length];
+                    for (int i = 0; i < carsInstances.Length; i++)
                     {
-                        if (step.cars[j].id == ids[i])
-                            index = j;
-                    }
-                    // If match exists then measure displacement
-                    if (index > -1)
-                    {
-                        Vector3 goal = new Vector3(step.cars[index].pos[0], 0.5f, step.cars[index].pos[1]);
-                        moveVects[i] = goal - carsInstances[i].transform.position;
-                    }
-                    else
-                    {
-                        moveVects[i] = Vector3.zero;
+                        // Match id with car if it exists
+                        int index = -1;
+                        for (int j = 0; j < step.cars.Length; j++)
+                        {
+                            if (step.cars[j].id == ids[i])
+                                index = j;
+                        }
+                        // If match exists then measure displacement
+                        if (index > -1)
+                        {
+                            Vector3 goal = new Vector3(step.cars[index].pos[0], 0.5f, step.cars[index].pos[1]);
+                            moveVects[i] = goal - carsInstances[i].transform.position;
+                        }
+                        else
+                        {
+                            moveVects[i] = Vector3.zero;
+                        }
+                        // Check if model freezes
+                        if (moveVects[i].magnitude > 0)
+                        {
+                            remain_still = false;
+                        }
+                        // Assign new rotations
+                        if (moveVects[i].magnitude == 0)
+                        {
+                            try
+                            {
+                                for (int j = 0; j < cached_ids.Length; j++)
+                                {
+                                    if (cached_ids[j] == ids[i])
+                                    {
+                                        rot_angles[i] = cached_rot_angles[j];
+                                        carsInstances[i].transform.rotation = new Quaternion(0,0,0,1);
+                                        carsInstances[i].transform.Rotate(new Vector3(0,cached_rot_angles[j],0), Space.World);
+                                    }
+                                }
+                            }
+                            catch {}
+                        }
+                        else
+                        {
+                            rot_angles[i] = rotation(moveVects[i]);
+                            carsInstances[i].transform.rotation = new Quaternion(0,0,0,1);
+                            carsInstances[i].transform.Rotate(new Vector3(0,rot_angles[i],0), Space.World);
+                        }
+                        // Debug.Log(carsInstances[i].name + " rot " + rot_angles[i]);
                     }
                 }
+                if (remain_still && !firstStep)
+                {
+                    #if UNITY_EDITOR
+                    StartCoroutine(SendData());
+                    #endif
                 }
                 else
                 {
-                    firstStep = false;
+                    received = true;
                 }
-
-                received = true;
                 Debug.Log("<-------RESPONSE------->");
             }
         }
+    }
+
+    public void Awake()
+    {
+        instance = this;
     }
 
     // Start is called before the first frame update
     async void Start()
     {
         carsInstances = new GameObject[0];
+        rot_angles = new float[0];
         #if UNITY_EDITOR
         StartCoroutine(SendData());
         #endif
@@ -131,28 +219,53 @@ public class WebClient : MonoBehaviour
             // Assign positions and get movement vectors
             if (firstStep || chrono > 1 / fps)
             {
+                // for (int i = 0; i < step.tf.Length; i++)
+                // {
+                //     Debug.Log("Semaforo" + i + "- Status" + step.tf[i].status);
+                // }
                 received = false;
                 chrono = 0.0f;
-                foreach (GameObject car in carsInstances)
+                cached_ids = new int[carsInstances.Length];
+                cached_rot_angles = (float[])rot_angles.Clone();
+                for (int i = 0; i < carsInstances.Length; i++)
                 {
-                    Destroy(car, 0.0f);
+                    cached_ids[i] = int.Parse(carsInstances[i].name);
+                    // Debug.Log("ID:" + cached_ids[i] + "| Rotation" + cached_rot_angles[i]);
+                    Destroy(carsInstances[i], 0.0f);
                 }
                 carsInstances = new GameObject[step.cars.Length];
                 ids = new int[step.cars.Length];
                 for (int i = 0; i < carsInstances.Length; i++)
                 {
                     Vector3 pos = new Vector3(step.cars[i].pos[0], 0.5f, step.cars[i].pos[1]);
-                    Quaternion rot = new Quaternion(0,0,0,1);
+
+                    // Assigning rotation
                     if (step.cars[i].name == "Car")
                     {
-                        carsInstances[i] = GameObject.Instantiate(carPrefabs[0], pos, rot);
+                        carsInstances[i] = GameObject.Instantiate(carPrefabs[0], pos, new Quaternion(0,0,0,1));
                     }
                     else
                     {
-                        carsInstances[i] = GameObject.Instantiate(ambPrefab, pos, rot);
+                        carsInstances[i] = GameObject.Instantiate(ambPrefab, pos, new Quaternion(0,0,0,1));
                     }
+
+                    try
+                    {
+                        int index = 0;
+                        foreach (int id in cached_ids)
+                        {
+                            if (id == step.cars[i].id)
+                                break;
+                            index++;
+                        }
+                        carsInstances[i].transform.Rotate(0,rot_angles[index],0,Space.World);
+                    }
+                    catch {}
+
+                    carsInstances[i].name = step.cars[i].id.ToString();
                     ids[i] = step.cars[i].id;
                 }
+                firstStep = false;
                 #if UNITY_EDITOR
                 StartCoroutine(SendData());
                 #endif

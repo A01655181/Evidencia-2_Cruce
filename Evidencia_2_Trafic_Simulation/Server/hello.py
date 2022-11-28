@@ -4,7 +4,7 @@ import json, logging, os, atexit
 import inter_model
 
 app = Flask(__name__, static_url_path='')
-model = inter_model.IntersectionModel(25)
+model = inter_model.IntersectionModel(40)
 
 # On IBM Cloud Cloud Foundry, get the port number from the environment variable PORT
 # When running this app on the local machine, default the port to 8000
