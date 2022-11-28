@@ -145,7 +145,8 @@ public class WebClient : MonoBehaviour
                         // If match exists then measure displacement
                         if (index > -1)
                         {
-                            Vector3 goal = new Vector3(step.cars[index].pos[0], 0.5f, step.cars[index].pos[1]) * scale;
+                            Vector3 goal = new Vector3(step.cars[index].pos[0], 0.5f, step.cars[index].pos[1]);
+                            goal = goal * scale;
                             moveVects[i] = goal - carsInstances[i].transform.position;
                         }
                         else
