@@ -1005,11 +1005,8 @@ class IntersectionModel(mesa.Model):
                 self.time += 1
 
             elif self.time == 25: # max time
-                print("Reached max time!")
-                print(self.prio)
 
                 if len(self.prio) == 1:
-                    print("Inside here!")
                     self.time = 0
                     self.vel_cycle = False
                     self.yellow_light = False
@@ -1024,7 +1021,6 @@ class IntersectionModel(mesa.Model):
                 self.time += 1
         else:
             self.prio = self.get_vel_reads()
-            print(f"Prio found is {self.prio}")
 
             if self.prio == []: # if no traffic then get vel reads
                 self.prio = ['up', 'right', 'down', 'left']
