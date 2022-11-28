@@ -4,6 +4,11 @@ import random
 import math
 
 def move(agent):
+
+    # Get head position
+    curr_x, curr_y = agent.pos
+    curr_pos = [curr_x, curr_y]
+
     will_ignore = False
 
     if isinstance(agent, Ambulance):
@@ -49,7 +54,6 @@ def move(agent):
         possible_steps = agent.model.grid.get_neighborhood(
             agent.pos, moore=True, include_center=True
         )
-
 
         opts = []
         for steps in possible_steps:
@@ -114,6 +118,9 @@ def move(agent):
                 min_val = aux
         if (len(best) > 1):
             agent.model.grid.move_agent(agent, tuple(e for e in best))
+
+        if best == curr_pos: # if did not move
+            agent.waiting_time += 1
 
     elif agent.status == 1:
 
@@ -191,6 +198,9 @@ def move(agent):
             if (len(best) > 1):
                 agent.model.grid.move_agent(agent, tuple(e for e in best))
 
+            if best == curr_pos: # if did not move
+                agent.waiting_time += 1
+
     # STATUS 2
     elif agent.status == 2:
 
@@ -220,6 +230,7 @@ def move(agent):
                                 break
                             else:
                                 agent.crazy_timer -= 1
+                                agent.waiting_time += 1
                                 cannot_use_step = True
                                 break
                         else:
@@ -276,30 +287,18 @@ def move(agent):
             if (len(best) > 1):
                 agent.model.grid.move_agent(agent, tuple(e for e in best))
 
-            # Get current cell agents
-            check_crash = agent.model.grid.get_cell_list_contents(agent.pos)
-            more_than_one = 0
-
-
+            if best == curr_pos: # if did not move
+                agent.waiting_time += 1
 
     # MOVING AMBULANCE
     elif agent.status == 3: # is ambulance
 
         for i in range(4):
-            # Get head position
-            curr_x, curr_y = agent.pos
-            curr_pos = [curr_x, curr_y]
 
             # Move ambulance tail to next position
             possible_steps = agent.model.grid.get_neighborhood(
                 agent.pos, moore=True, include_center=True
             )
-
-            # if agent.inside_int is False:
-            #     for inter in agent.model.intersection:
-            #         if curr_pos == inter:
-            #             agent.inside_int = True
-            #             break
 
             opts = []
             for steps in possible_steps:
@@ -369,10 +368,12 @@ def move(agent):
             if (len(best) > 1):
                 agent.model.grid.move_agent(agent, tuple(e for e in best))
 
-            if best != curr_pos: # if did not move
+            if best != curr_pos: # if did move
                 # Move ambulance tail to head
                 tail_inst = agent.tail # instance of tail
                 agent.model.grid.move_agent(tail_inst, tuple(e for e in curr_pos))
+            else: # did not move
+                agent.waiting_time += 1
 
 
 # Some useful methods that are not dependent of an agent
@@ -404,6 +405,7 @@ class TrafficLight(mesa.Agent):
         self.direction = direction
 
     def step(self):
+
         if self.model.yellow_light is True:
             if self.status == 3:
                 self.status = 2
@@ -434,8 +436,9 @@ class Ambulance(mesa.Agent): # head
         self.final_side = ""
 
         self.final_des = []
-
         self.tail = tail
+        self.waiting_time = 0
+
 
     def step(self):
         # Check for self if another object is in the sane cell
@@ -449,7 +452,11 @@ class Ambulance(mesa.Agent): # head
                 self.model.vh_scheduler.remove(self)
                 self.model.grid.remove_agent(self)
                 self.model.curr_cars -= 1
+
+                print("Added one to succesfull trips")
+                self.model.succesfull += 1
                 return
+
         move(self)
 
 
@@ -477,6 +484,7 @@ class Car(mesa.Agent):
         self.final_des = []
 
         self.crazy_timer = 0
+        self.waiting_time = 0
 
     def step(self):
         des_x, des_y = self.pos
@@ -488,6 +496,8 @@ class Car(mesa.Agent):
                 self.model.vh_scheduler.remove(self)
                 self.model.grid.remove_agent(self)
                 self.model.curr_cars -= 1
+                print("Added one to succesfull trips")
+                self.model.succesfull += 1
                 return
 
         move(self)
@@ -510,14 +520,15 @@ class IntersectionModel(mesa.Model):
         self.vh_scheduler = mesa.time.RandomActivation(self) # scheduler for steps
         self.running = True # running while this is true
 
-        self.prio = []
         self.time = 0
-
-        self.tf_cycle = False
-        self.vel_cycle = False
-
+        self.cycle = False
         self.yellow_light = False
+
+        self.prio = ['up', 'left', 'down', 'right']
+
+        # Vars for data
         self.crashes_num = 0
+        self.succesfull = 0
 
         # Sidewalks:
         x_val = np.union1d(np.array([i for i in range(18)]), np.array([i for i in range(24, 50)]))
@@ -683,7 +694,6 @@ class IntersectionModel(mesa.Model):
         # Left down street
         x_val_int = [i for i in range(0, 18)]
         y_val_int = [22, 23, 24]
-
         for x in x_val_int:
             for y in y_val_int:
                 left_down.append([x, y])
@@ -724,6 +734,14 @@ class IntersectionModel(mesa.Model):
         right_dict["down"] = right_down
         self.streets["right"] = right_dict
 
+        self.data = mesa.DataCollector(
+                {
+                    "Waiting time" : IntersectionModel.average_waiting_time,
+                    "Succesfull trips" : IntersectionModel.succesful_trips,
+                    "Crashes" : IntersectionModel.crashes
+                }
+        )
+
 
     def get_data(self):
         data = {}
@@ -735,178 +753,6 @@ class IntersectionModel(mesa.Model):
             for agent in self.vh_scheduler.agents]
 
         return data
-
-
-    """ GET TRAFFIC LIGHTS READ  """
-    def get_tf_reads(self):
-        s_up = [agents for agents in self.tl_scheduler.agents if agents.direction == "up"]
-        s_down = [agents for agents in self.tl_scheduler.agents if agents.direction == "down"]
-        s_left = [agents for agents in self.tl_scheduler.agents if agents.direction == "left"]
-        s_right = [agents for agents in self.tl_scheduler.agents if agents.direction == "right"]
-
-        decide = {}
-        count = 0
-
-        for one in s_up:
-            res_up = list()
-
-            for i in range(1, 5):
-                aux = (one.pos[0], one.pos[1] + i)
-                res_up.append(one.model.grid.get_cell_list_contents(aux))
-
-            for val in res_up:
-                for stuff in val:
-                    if isinstance(stuff, Car) or isinstance(stuff, Ambulance):
-                        count += 1
-
-        if (count != 0):
-            decide["up"] = count
-
-        count = 0
-
-        for two in s_down:
-            res_down = list()
-
-            for i in range(1, 5):
-                aux = (two.pos[0], two.pos[1] - i)
-                res_down.append(two.model.grid.get_cell_list_contents(aux))
-
-            for val in res_down:
-                for stuff in val:
-                    if isinstance(stuff, Car) or isinstance(stuff, Ambulance):
-                        count += 1
-
-        if (count != 0):
-            decide["down"] = count
-
-        count = 0
-
-        for three in s_left:
-            res_left = list()
-
-            for i in range(1, 5):
-                aux = (three.pos[0] - i, three.pos[1])
-                res_left.append(three.model.grid.get_cell_list_contents(aux))
-
-            for val in res_left:
-                for stuff in val:
-                    if isinstance(stuff, Car) or isinstance(stuff, Ambulance):
-                        count += 1
-
-        if (count != 0):
-            decide["left"] = count
-
-        count = 0
-
-        for four in s_right:
-            res_right = list()
-
-            for i in range(1, 5):
-                aux = (four.pos[0] + i, four.pos[1])
-                res_right.append(four.model.grid.get_cell_list_contents(aux))
-
-            for val in res_right:
-                for stuff in val:
-                    if isinstance(stuff, Car) or isinstance(stuff, Ambulance):
-                        count += 1
-
-        if (count != 0):
-            decide["right"] = count
-
-        if decide == {}:
-            return []
-        else:
-            return sorted(decide, key=decide.get, reverse=True)
-
-
-    """ STEP FOR SENSOR """
-    def get_vel_reads(self):
-        s_up = [agents for agents in self.tl_scheduler.agents if agents.direction == "up"]
-        s_down = [agents for agents in self.tl_scheduler.agents if agents.direction == "down"]
-        s_left = [agents for agents in self.tl_scheduler.agents if agents.direction == "left"]
-        s_right = [agents for agents in self.tl_scheduler.agents if agents.direction == "right"]
-
-        decide = {}
-        count = 0
-        vel = 0
-
-        for one in s_up:
-            res_up = list()
-
-            for i in range(7, 18):
-                aux = (one.pos[0], one.pos[1] + i)
-                res_up.append(self.grid.get_cell_list_contents(aux))
-
-            for val in res_up:
-                for stuff in val:
-                    if isinstance(stuff, Car) or isinstance(stuff, Ambulance):
-                        count += 1
-                        vel += stuff.velocity
-
-        if (count != 0):
-            decide["up"] = vel/count
-
-        count = 0
-        vel = 0
-
-        for two in s_down:
-            res_down = list()
-
-            for i in range(5, 18):
-                aux = (two.pos[0], two.pos[1] - i)
-                res_down.append(self.grid.get_cell_list_contents(aux))
-
-            for val in res_down:
-                for stuff in val:
-                    if isinstance(stuff, Car) or isinstance(stuff, Ambulance):
-                        count += 1
-                        vel += vel
-
-        if (count != 0):
-            decide["down"] = vel/count
-
-        count = 0
-        vel = 0
-
-        for three in s_left:
-            res_left = list()
-
-            for i in range(5, 18):
-                aux = (three.pos[0] - i, three.pos[1])
-                res_left.append(self.grid.get_cell_list_contents(aux))
-
-            for val in res_left:
-                for stuff in val:
-                    if isinstance(stuff, Car) or isinstance(stuff, Ambulance):
-                        count += 1
-                        vel += vel
-
-        if (count != 0):
-            decide["left"] = vel/count
-
-        count = 0
-        vel = 0
-
-        for four in s_right:
-            res_right = list()
-
-            for i in range(5, 18):
-                aux = (four.pos[0] + i, four.pos[1])
-                res_right.append(self.grid.get_cell_list_contents(aux))
-
-            for val in res_right:
-                for stuff in val:
-                    if isinstance(stuff, Car) or isinstance(stuff, Ambulance):
-                        count += 1
-                        vel += vel
-
-        if (count != 0):
-            decide["right"] = vel/count
-
-        if decide == {}:
-            return []
-        else:
-            return sorted(decide, key=decide.get, reverse=True)
 
 
     # SPAWN VEHICLES
@@ -975,9 +821,9 @@ class IntersectionModel(mesa.Model):
                                             agent.curr_street = key # this will be which street
                                             agent.curr_side = vals # this will be which side of the street
                             break
-                    if self.debug is True:
-                        print(f" [[ Car ]] spawned at ({x}. {y}) with status of {status_debug}")
-                        print(f"    ::- Will go to {agent.final_des}")
+                    # if self.debug is True:
+                    #     print(f" [[ Car ]] spawned at ({x}. {y}) with status of {status_debug}")
+                    #     print(f"    ::- Will go to {agent.final_des}")
                     self.unique_ids += 1
                     self.curr_cars += 1
 
@@ -1030,111 +876,66 @@ class IntersectionModel(mesa.Model):
                                             agent.curr_side = vals # this will be which side of the street
                             break
 
-                    if self.debug is True:
-                        print(f" [[ Ambulance ]] spawned at ({x}. {y}) with status of {agent.status}")
-                        print(f"    ::- Will go to {agent.final_des}")
+                    # if self.debug is True:
+                    #     print(f" [[ Ambulance ]] spawned at ({x}. {y}) with status of {agent.status}")
+                    #     print(f"    ::- Will go to {agent.final_des}")
 
                     self.unique_ids += 1
                     self.curr_cars += 1
 
         self.vh_scheduler.step()
 
-    def check_inter_empty(self):
-        vehicles = [agents for agents in self.vh_scheduler.agents]
-
-        for location in self.intersection:
-            for vehicle in vehicles:
-                x_v, y_v = vehicle.pos
-                compare = [x_v, y_v]
-
-                if compare == location:
-                    return False
-        return True
-
 
     def step(self):
 
-        if self.debug is True:
-            print(f"The max number of cars is {self.max_cars}")
-            print(f"The current number of cars is {self.curr_cars}")
+        # if self.debug is True:
+        #     print(f"The max number of cars is {self.max_cars}")
+        #     print(f"The current number of cars is {self.curr_cars}")
 
         if self.curr_cars < self.max_cars:
             self.spawnVehicles()
             return self.get_data()
 
-        if self.tf_cycle is True: # if there is a cycle active
+        if self.cycle is True: # on cycle
 
-            if self.time == 20:
+            if self.time == 30:
                 # Set current traffic light in green to yellow
                 self.yellow_light = True
-                self.tl_scheduler.step() # move vehicles
+                self.vh_scheduler.step() # move Trafficlight
+                self.tl_scheduler.step() # move Trafficlight
                 self.time += 1
-            elif self.time == 60: # max time
-                # Do while intersection is not empty
-                int_empty = self.check_inter_empty()
 
-                if int_empty is True:
-                    self.prio.pop(0)
+            elif self.time == 50: # max time
+                self.prio.pop(0)
 
-                    if self.prio == []:
-                        self.time = 0
-                        self.tf_cycle = False
-                        self.yellow_light = False
-                    else:
-                        self.time = 0
-                        self.tl_scheduler.step() # move vehicles
+                if self.prio == []:
+                    self.cycle = False
+                    self.tl_scheduler.step() # move Trafficlight
                 else:
-                    self.vh_scheduler.step() # move vehicles
+                    self.yellow_light = False
+                    self.vh_scheduler.step() # move Trafficlight
+                    self.tl_scheduler.step() # move Trafficlight
 
-            else:
-                self.vh_scheduler.step() # move vehicles
-                self.time += 1
-
-        elif self.vel_cycle is True:
-
-            if self.time == 20:
-                # Set current traffic light in green to yellow
-                self.yellow_light = True
-                self.tl_scheduler.step() # move vehicles
-                self.time += 1
-
-            elif self.time == 60: # max time
-
-                # Do while intersection is not empty
-                int_empty = self.check_inter_empty()
-
-                if int_empty is True:
-                    self.prio.pop(0)
-
-                    if self.prio == []:
-                        self.time = 0
-                        self.vel_cycle = False
-                        self.yellow_light = False
-                    else:
-                        self.time = 0
-                        self.tl_scheduler.step() # move vehicles
-                else:
-                    self.vh_scheduler.step() # move vehicles
-
+                self.time = 0
             else:
                 self.vh_scheduler.step() # move vehicles
                 self.time += 1
         else:
-            self.prio = self.get_tf_reads() # traffic has priority
+            self.prio = ['up', 'right', 'down', 'left']
+            self.cycle = True
+            self.tl_scheduler.step()
 
-            if self.prio == []: # if no traffic then get vel reads
-                self.prio = self.get_vel_reads()
-
-                if self.prio == []:
-                    self.tl_scheduler.step()
-                    self.vh_scheduler.step()
-                else:
-                    self.vel_cycle = True
-                    self.tl_scheduler.step()
-
-            else: # tf prio found. Start cycle
-                self.tf_cycle = True
-                self.tl_scheduler.step()
-                self.vh_scheduler.step()
-
+        self.data.collect(self)
         return self.get_data()
+
+    @staticmethod
+    def average_waiting_time(model):
+        return np.average([agent.waiting_time for agent in model.vh_scheduler.agents])
+
+    @staticmethod
+    def succesful_trips(model):
+        return model.succesfull
+
+    @staticmethod
+    def crashes(model):
+        return model.crashes_num
