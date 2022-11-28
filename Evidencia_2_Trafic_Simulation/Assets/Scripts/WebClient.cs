@@ -36,6 +36,8 @@ public class WebClient : MonoBehaviour
     Step step;
     int[] ids;
     int[] cached_ids;
+    int[] car_types;
+    int[] cached_car_types;
     bool firstStep = true;
     bool received = false;
     float chrono = 0.0f;
@@ -226,14 +228,17 @@ public class WebClient : MonoBehaviour
                 received = false;
                 chrono = 0.0f;
                 cached_ids = new int[carsInstances.Length];
+                cached_car_types = new int[carsInstances.Length];
                 cached_rot_angles = (float[])rot_angles.Clone();
                 for (int i = 0; i < carsInstances.Length; i++)
                 {
                     cached_ids[i] = int.Parse(carsInstances[i].name);
+                    cached_car_types[i] = car_types[i];
                     // Debug.Log("ID:" + cached_ids[i] + "| Rotation" + cached_rot_angles[i]);
                     Destroy(carsInstances[i], 0.0f);
                 }
                 carsInstances = new GameObject[step.cars.Length];
+                car_types = new int[step.cars.Length];
                 ids = new int[step.cars.Length];
                 for (int i = 0; i < carsInstances.Length; i++)
                 {
@@ -242,7 +247,17 @@ public class WebClient : MonoBehaviour
                     // Assigning rotation
                     if (step.cars[i].name == "Car")
                     {
-                        carsInstances[i] = GameObject.Instantiate(carPrefabs[0], pos, new Quaternion(0,0,0,1));
+                        int car_type = (int)UnityEngine.Random.Range(0, carPrefabs.Length - 0.1f);
+                        for (int j = 0; j < cached_ids.Length; j++)
+                        {
+                            if (cached_ids[j] == step.cars[i].id)
+                            {
+                                car_type = cached_car_types[j];
+                            }
+                        }
+                        car_types[i] = car_type;
+                        Debug.Log(car_type);
+                        carsInstances[i] = GameObject.Instantiate(carPrefabs[car_type], pos, new Quaternion(0,0,0,1));
                     }
                     else
                     {
