@@ -8,8 +8,8 @@ simulation_params = {
         "max_cars_num":UserSettableParameter(
                 "slider",
                 "Numero de carros simultaneos",
-                1, # default
-                1, # min
+                10, # default
+                10, # min
                 50, # max
                 1, # step
                 description="Elija el numero de carros que debe de haber maximo en la simulacion"
@@ -90,8 +90,32 @@ def agent_portrayal(agent):
 
 grid = mesa.visualization.CanvasGrid(agent_portrayal, 50, 50, 500, 500)
 
+chart = mesa.visualization.ChartModule(
+    [
+        {"Label": "Succesfull trips", "Color":"green"},
+    ],
+    canvas_height=300,
+    data_collector_name="data"
+)
+
+chart2 = mesa.visualization.ChartModule(
+    [
+        {"Label": "Waiting time", "Color":"red"},
+    ],
+    canvas_height=300,
+    data_collector_name="data"
+)
+
+chart3 = mesa.visualization.ChartModule(
+    [
+        {"Label": "Crashes", "Color":"red"},
+    ],
+    canvas_height=300,
+    data_collector_name="data"
+)
+
 server = mesa.visualization.ModularServer(
-        IntersectionModel, [grid], "Intersection model", simulation_params)
+        IntersectionModel, [grid, chart, chart2, chart3], "Intersection model", simulation_params)
 
 server.port = 8521 # The default
 server.launch()
