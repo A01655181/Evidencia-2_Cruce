@@ -146,6 +146,7 @@ public class WebClient : MonoBehaviour
                         if (index > -1)
                         {
                             Vector3 goal = new Vector3(step.cars[index].pos[0], 0.5f, step.cars[index].pos[1]);
+                            goal = goal * scale;
                             moveVects[i] = goal - carsInstances[i].transform.position;
                         }
                         else
@@ -242,7 +243,7 @@ public class WebClient : MonoBehaviour
                 ids = new int[step.cars.Length];
                 for (int i = 0; i < carsInstances.Length; i++)
                 {
-                    Vector3 pos = new Vector3(step.cars[i].pos[0], 0.5f, step.cars[i].pos[1]);
+                    Vector3 pos = new Vector3(step.cars[i].pos[0], 0.5f, step.cars[i].pos[1]) * scale;
 
                     // Assigning rotation
                     if (step.cars[i].name == "Car")
