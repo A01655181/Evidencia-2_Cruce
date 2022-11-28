@@ -4,14 +4,11 @@ import random
 import math
 
 def move(agent):
-    # print("\nMOVING")
     will_ignore = False
 
     if isinstance(agent, Ambulance):
         pass
     else:
-        # print(f"Current crazy timer val is {agent.crazy_timer}")
-
         if agent.crazy_timer <= 0: # we are out of patience
             if agent.status == 1:
                 agent.status = 2
@@ -31,7 +28,6 @@ def move(agent):
                 del_arr.append(obj)
 
         if len(del_arr) > 1:
-            # print(f"Ocurred a crash with {len(del_arr)} number of vehicles")
             agent.model.crashes_num += 1
 
             for agent_to_del in del_arr:
@@ -54,7 +50,6 @@ def move(agent):
             agent.pos, moore=True, include_center=True
         )
 
-        # print(f"Car with [[ normal ]] status has these as possible steps: {possible_steps}")
 
         opts = []
         for steps in possible_steps:
@@ -79,7 +74,6 @@ def move(agent):
                 else:
                     opts.append(steps)
 
-        # print(f"Opts found by [[ normal car ]] for moving: {opts}")
 
         # After adding all possible cells filtered agent-wise, check if cells are in either the current street as agent or in the intersection array
         # But first, check if any opts left, other wise only return and set speed of the agent to 0
@@ -96,20 +90,17 @@ def move(agent):
             for location in agent.model.streets[agent.curr_street][agent.curr_side]:
                 if location == next_loc:
                     in_street = True
-                    # print(f"Current value {location} is inside current street")
                     final_opts.append(next_loc)
                     break
             # Or if in intersection
             for inter in agent.model.intersection:
                 if next_loc == inter:
                     in_iter = True
-                    # print(f"Current value {inter} inside intersection")
                     final_opts.append(next_loc)
                     break
             for location in agent.model.streets[agent.final_street][agent.final_side]:
                 if location == next_loc:
                     in_street = True
-                    # print(f"Current value {location} is inside next street")
                     final_opts.append(next_loc)
                     break
         min_val = 100000
@@ -132,8 +123,6 @@ def move(agent):
                 agent.pos, moore=True, include_center=True
             )
 
-            # print(f"Car with [[ pressured ]] status has these as possible steps: {possible_steps}")
-
             opts = []
             for steps in possible_steps:
                 cannot_use_step = False
@@ -150,7 +139,6 @@ def move(agent):
                             cannot_use_step = False
                             break
                         elif isinstance(obj, TrafficLight) and obj.status == 1:
-                            # print(f"Current [[ pressured ]] agent has decreased its crazy_timer value from {agent.crazy_timer} to {agent.crazy_timer - 1}")
                             agent.crazy_timer -= 1
                             cannot_use_step = True
                             break
@@ -162,8 +150,6 @@ def move(agent):
                         continue
                     else:
                         opts.append(steps)
-
-            # print(f"Opts found by [[ pressured car ]] for moving: {opts}")
 
             # After adding all possible cells filtered agent-wise, check if cells are in either the current street as agent or in the intersection array
             # But first, check if any opts left, other wise only return and set speed of the agent to 0
@@ -180,20 +166,17 @@ def move(agent):
                 for location in agent.model.streets[agent.curr_street][agent.curr_side]:
                     if location == next_loc:
                         in_street = True
-                        # print(f"Current value {location} is inside current street")
                         final_opts.append(next_loc)
                         break
                 # Or if in intersection
                 for inter in agent.model.intersection:
                     if next_loc == inter:
                         in_iter = True
-                        # print(f"Current value {inter} inside intersection")
                         final_opts.append(next_loc)
                         break
                 for location in agent.model.streets[agent.final_street][agent.final_side]:
                     if location == next_loc:
                         in_street = True
-                        # print(f"Current value {location} is inside next street")
                         final_opts.append(next_loc)
                         break
             min_val = 100000
@@ -216,8 +199,6 @@ def move(agent):
             possible_steps = agent.model.grid.get_neighborhood(
                 agent.pos, moore=True, include_center=True
             )
-
-            # print(f"Car with [[ desesperated ]] status has these as possible steps: {possible_steps}")
 
             opts = []
             for steps in possible_steps:
@@ -250,8 +231,6 @@ def move(agent):
                     else:
                         opts.append(steps)
 
-            # print(f"Opts found by [[ desesperated car ]] for moving: {opts}")
-
             # After adding all possible cells filtered agent-wise, check if cells are in either the current street as agent or in the intersection array
             # But first, check if any opts left, other wise only return and set speed of the agent to 0
             if len(opts) == 0:
@@ -269,7 +248,6 @@ def move(agent):
                 for location in agent.model.streets[agent.curr_street][agent.curr_side]:
                     if location == next_loc:
                         in_street = True
-                        # print(f"Current value {location} is inside current street")
                         final_opts.append(next_loc)
                         break
 
@@ -277,14 +255,12 @@ def move(agent):
                 for inter in agent.model.intersection:
                     if next_loc == inter:
                         in_iter = True
-                        # print(f"Current value {inter} inside intersection")
                         final_opts.append(next_loc)
                         break
 
                 for location in agent.model.streets[agent.final_street][agent.final_side]:
                     if location == next_loc:
                         in_street = True
-                        # print(f"Current value {location} is inside next street")
                         final_opts.append(next_loc)
                         break
 
@@ -350,8 +326,6 @@ def move(agent):
                     else:
                         opts.append(steps)
 
-            # print(f"Opts found for moving: {opts}")
-
             # After adding all possible cells filtered agent-wise, check if cells are in either the current street as agent or in the intersection array
             # But first, check if any opts left, other wise only return and set speed of the agent to 0
             if len(opts) == 0:
@@ -399,9 +373,7 @@ def move(agent):
                 # Move ambulance tail to head
                 tail_inst = agent.tail # instance of tail
                 agent.model.grid.move_agent(tail_inst, tuple(e for e in curr_pos))
-                # print(f"-:::: [ Associated tail {agent.tail.unique_id} has moved to former position {curr_pos}")
 
-    #print(f"Vehicle ended at position {agent.pos}\n\n")
 
 # Some useful methods that are not dependent of an agent
 def get_distance(p, q):
@@ -438,7 +410,6 @@ class TrafficLight(mesa.Agent):
                 return
 
         if self.model.prio == []:
-            # print("No queue found. Traffic lights will be set to 0")
             self.status = 0
             return
         else:
@@ -655,48 +626,6 @@ class IntersectionModel(mesa.Model):
                 # self.grid.place_agent(agent, (x, y))
                 # self.unique_ids += 1
 
-        # x_e_1 = [21, 22, 23]
-        # y_e_1 = [21]
-
-        # for x in x_e_1:
-        #     for y in y_e_1:
-        #         self.intersection.append([x, y])
-        #         # agent = DebugAgents(self.unique_ids, "intersection", self)
-        #         # self.grid.place_agent(agent, (x, y))
-        #         # self.unique_ids += 1
-
-        # x_e_2 = [18, 19, 20]
-        # y_e_2 = [28]
-
-        # for x in x_e_2:
-        #     for y in y_e_2:
-        #         self.intersection.append([x, y])
-        #         # agent = DebugAgents(self.unique_ids, "intersection", self)
-        #         # self.grid.place_agent(agent, (x, y))
-        #         # self.unique_ids += 1
-
-        # x_e_3 = [17]
-        # y_e_3 = [22, 23, 24]
-
-        # for x in x_e_3:
-        #     for y in y_e_3:
-        #         self.intersection.append([x, y])
-        #         # agent = DebugAgents(self.unique_ids, "intersection", self)
-        #         # self.grid.place_agent(agent, (x, y))
-        #         # self.unique_ids += 1
-
-        # x_e_4 = [24]
-        # y_e_4 = [25, 26, 27]
-
-        # for x in x_e_4:
-        #     for y in y_e_4:
-        #         self.intersection.append([x, y])
-        #         # agent = DebugAgents(self.unique_ids, "intersection", self)
-        #         # self.grid.place_agent(agent, (x, y))
-        #         # self.unique_ids += 1
-
-        # # print(f"INTERSECTION IS {self.intersection}")
-
         self.streets = {}
 
         down_dict = {}
@@ -805,8 +734,6 @@ class IntersectionModel(mesa.Model):
             {"pos": [int(agent.pos[0]), int(agent.pos[1])], "status":agent.status}
             for agent in self.vh_scheduler.agents]
 
-        # print(data)
-
         return data
 
 
@@ -822,7 +749,6 @@ class IntersectionModel(mesa.Model):
 
         for one in s_up:
             res_up = list()
-            # print(f"Up: searching with sensor in position {one.pos}")
 
             for i in range(1, 5):
                 aux = (one.pos[0], one.pos[1] + i)
@@ -1128,18 +1054,15 @@ class IntersectionModel(mesa.Model):
 
     def step(self):
 
-        # if self.debug is True:
-        #     print(f"The max number of cars is {self.max_cars}")
-        #     print(f"The current number of cars is {self.curr_cars}")
+        if self.debug is True:
+            print(f"The max number of cars is {self.max_cars}")
+            print(f"The current number of cars is {self.curr_cars}")
 
         if self.curr_cars < self.max_cars:
             self.spawnVehicles()
             return self.get_data()
 
         if self.tf_cycle is True: # if there is a cycle active
-
-            # print(":::- Traffic cycle is running!")
-            # print(self.time)
 
             if self.time == 20:
                 # Set current traffic light in green to yellow
@@ -1150,19 +1073,14 @@ class IntersectionModel(mesa.Model):
                 # Do while intersection is not empty
                 int_empty = self.check_inter_empty()
 
-                # print(f"Intersection is empty?: {int_empty}")
-                # print(f"Prio: {self.prio}")
-
                 if int_empty is True:
                     self.prio.pop(0)
 
                     if self.prio == []:
-                        # print("Setting time to 0 and restarting the cycle")
                         self.time = 0
                         self.tf_cycle = False
                         self.yellow_light = False
                     else:
-                        # print(f"Updated prio {self.prio}")
                         self.time = 0
                         self.tl_scheduler.step() # move vehicles
                 else:
@@ -1174,9 +1092,6 @@ class IntersectionModel(mesa.Model):
 
         elif self.vel_cycle is True:
 
-            # print(":::- Velocity cycle is running!")
-            # print(self.time)
-
             if self.time == 20:
                 # Set current traffic light in green to yellow
                 self.yellow_light = True
@@ -1187,20 +1102,15 @@ class IntersectionModel(mesa.Model):
 
                 # Do while intersection is not empty
                 int_empty = self.check_inter_empty()
-                # print(f"Intersection is empty?: {int_empty}")
-
-                # print(f"Prio: {self.prio}")
 
                 if int_empty is True:
                     self.prio.pop(0)
 
                     if self.prio == []:
-                        # print("Setting time to 0 and restarting the cycle")
                         self.time = 0
                         self.vel_cycle = False
                         self.yellow_light = False
                     else:
-                        # print(f"Updated prio {self.prio}")
                         self.time = 0
                         self.tl_scheduler.step() # move vehicles
                 else:
@@ -1210,30 +1120,21 @@ class IntersectionModel(mesa.Model):
                 self.vh_scheduler.step() # move vehicles
                 self.time += 1
         else:
-            # print("No cycle is running! Scanning for priority")
             self.prio = self.get_tf_reads() # traffic has priority
-
-            # print(f"After scan prio is {self.prio}")
 
             if self.prio == []: # if no traffic then get vel reads
                 self.prio = self.get_vel_reads()
 
                 if self.prio == []:
-                    # print("No vel nor tf reads found")
                     self.tl_scheduler.step()
                     self.vh_scheduler.step()
                 else:
-                    # print("Velocity cycle found!")
                     self.vel_cycle = True
                     self.tl_scheduler.step()
 
             else: # tf prio found. Start cycle
-                # print("Traffic cycle found!")
-                # print(f"Current cycle time is {self.time}")
                 self.tf_cycle = True
                 self.tl_scheduler.step()
                 self.vh_scheduler.step()
-
-        # print(f"Number of crashes so far: {self.crashes_num}")
 
         return self.get_data()
