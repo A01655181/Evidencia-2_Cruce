@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import json, logging, os, atexit
 # import simul
-from Models import normal, inter_model, traffic
+from Models import normal, inter_model, traffic, vel
 
 app = Flask(__name__, static_url_path='')
 model = traffic.IntersectionModel(40)
