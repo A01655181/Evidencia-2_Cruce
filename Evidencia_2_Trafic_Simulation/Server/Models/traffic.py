@@ -17,7 +17,7 @@ def move(agent):
         if agent.crazy_timer <= 0: # we are out of patience
             if agent.status == 1:
                 agent.status = 2
-                agent.crazy_timer = random.randrange(10, 20)
+                agent.crazy_timer = random.randrange(30, 50)
 
             elif agent.status == 2:
                 will_ignore = True
@@ -452,7 +452,6 @@ class Ambulance(mesa.Agent): # head
                 self.model.grid.remove_agent(self)
                 self.model.curr_cars -= 1
 
-                print("Added one to succesfull trips")
                 self.model.succesfull += 1
                 return
 
@@ -495,7 +494,6 @@ class Car(mesa.Agent):
                 self.model.vh_scheduler.remove(self)
                 self.model.grid.remove_agent(self)
                 self.model.curr_cars -= 1
-                print("Added one to succesfull trips")
                 self.model.succesfull += 1
                 return
 
@@ -1082,30 +1080,26 @@ class IntersectionModel(mesa.Model):
             return self.get_data()
 
         if self.tf_cycle is True: # if there is a cycle active
-
-            if self.time == 30:
+            if self.time == 15:
                 # Set current traffic light in green to yellow
                 self.yellow_light = True
                 self.tl_scheduler.step() # move traffic lights
-                self.vh_scheduler.step() # move vehicles
                 self.time += 1
 
-            elif self.time == 50: # max time
+            elif self.time == 25: # max time
                 # Do while intersection is not empty
-                int_empty = self.check_inter_empty()
 
-                if int_empty is True:
-                    self.prio.pop(0)
-
-                    if self.prio == []:
-                        self.time = 0
-                        self.tf_cycle = False
-                        self.yellow_light = False
-                    else:
-                        self.time = 0
-                        self.tl_scheduler.step() # move vehicles
+                if len(self.prio) == 1:
+                    self.time = 0
+                    self.tf_cycle = False
+                    self.yellow_light = False
+                    self.tl_scheduler.step() # move vehicles
+                    return
                 else:
-                    self.vh_scheduler.step() # move vehicles
+                    self.prio.pop(0)
+                    self.time = 0
+                    self.yellow_light = False
+                    self.tl_scheduler.step()
 
             else:
                 self.vh_scheduler.step() # move vehicles
@@ -1114,12 +1108,12 @@ class IntersectionModel(mesa.Model):
             self.prio = self.get_tf_reads() # traffic has priority
 
             if self.prio == []: # if no traffic then get vel reads
-                self.tl_scheduler.step()
-                self.vh_scheduler.step()
+                self.prio = ['up', 'right', 'down', 'left']
             else:
                 self.tf_cycle = True
-                self.tl_scheduler.step()
-                self.vh_scheduler.step()
+
+            self.tl_scheduler.step()
+            self.vh_scheduler.step()
 
         self.data.collect(self)
         return self.get_data()

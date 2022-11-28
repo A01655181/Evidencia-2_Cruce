@@ -17,7 +17,7 @@ def move(agent):
         if agent.crazy_timer <= 0: # we are out of patience
             if agent.status == 1:
                 agent.status = 2
-                agent.crazy_timer = random.randrange(10, 20)
+                agent.crazy_timer = random.randrange(30, 50)
 
             elif agent.status == 2:
                 will_ignore = True
@@ -453,7 +453,6 @@ class Ambulance(mesa.Agent): # head
                 self.model.grid.remove_agent(self)
                 self.model.curr_cars -= 1
 
-                print("Added one to succesfull trips")
                 self.model.succesfull += 1
                 return
 
@@ -496,7 +495,6 @@ class Car(mesa.Agent):
                 self.model.vh_scheduler.remove(self)
                 self.model.grid.remove_agent(self)
                 self.model.curr_cars -= 1
-                print("Added one to succesfull trips")
                 self.model.succesfull += 1
                 return
 
@@ -897,26 +895,25 @@ class IntersectionModel(mesa.Model):
             return self.get_data()
 
         if self.cycle is True: # on cycle
-
-            if self.time == 30:
+            if self.time == 15:
                 # Set current traffic light in green to yellow
                 self.yellow_light = True
-                self.vh_scheduler.step() # move Trafficlight
                 self.tl_scheduler.step() # move Trafficlight
                 self.time += 1
 
-            elif self.time == 50: # max time
-                self.prio.pop(0)
+            elif self.time == 25: # max time
 
-                if self.prio == []:
+                if len(self.prio) == 1:
+                    self.time = 0
                     self.cycle = False
-                    self.tl_scheduler.step() # move Trafficlight
-                else:
                     self.yellow_light = False
-                    self.vh_scheduler.step() # move Trafficlight
-                    self.tl_scheduler.step() # move Trafficlight
-
-                self.time = 0
+                    self.tl_scheduler.step()
+                    return
+                else:
+                    self.prio.pop(0)
+                    self.time = 0
+                    self.yellow_light = False
+                    self.tl_scheduler.step() # updated lights
             else:
                 self.vh_scheduler.step() # move vehicles
                 self.time += 1
