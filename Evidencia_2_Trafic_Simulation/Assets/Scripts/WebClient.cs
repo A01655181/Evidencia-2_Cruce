@@ -182,9 +182,37 @@ public class WebClient : MonoBehaviour
                         // Assign new rotations
                         if (moveVects[i].magnitude != 0)
                         {
-                            rot_angles[i] = rotation(moveVects[i]);
                             carsInstances[i].transform.rotation = new Quaternion(0,0,0,1);
+                            rot_angles[i] = rotation(moveVects[i]);
                             carsInstances[i].transform.Rotate(new Vector3(0,rot_angles[i],0), Space.World);
+                        }
+                        else
+                        {
+                            Collider[] hitColliders = Physics.OverlapSphere(carsInstances[i].transform.position, 0f);
+
+                            if (hitColliders.Length > 0)
+                            {
+                                // Debug.Log("Inside Collider");
+                                carsInstances[i].transform.rotation = new Quaternion(0,0,0,1);
+                                Vector3 rot = new Vector3(0,0,0);
+                                if (hitColliders[0].gameObject.name == "Dir1")
+                                {
+                                    rot = new Vector3(0,0,0);
+                                }
+                                else if (hitColliders[0].gameObject.name == "Dir2")
+                                {
+                                    rot = new Vector3(0,180,0);
+                                }
+                                else if (hitColliders[0].gameObject.name == "Dir3")
+                                {
+                                    rot = new Vector3(0,270,0);
+                                }
+                                else if (hitColliders[0].gameObject.name == "Dir4")
+                                {
+                                    rot = new Vector3(0,90,0);
+                                }
+                                carsInstances[i].transform.Rotate(rot);
+                            }
                         }
                         // Debug.Log(carsInstances[i].name + " rot " + rot_angles[i]);
                     }
@@ -314,19 +342,6 @@ public class WebClient : MonoBehaviour
                             carsInstances[i] = GameObject.Instantiate(ambPrefab, pos, new Quaternion(0,0,0,1));
                         }
                     }
-
-                    // try
-                    // {
-                    //     int index = 0;
-                    //     foreach (int id in cached_ids)
-                    //     {
-                    //         if (id == step.cars[i].id)
-                    //             break;
-                    //         index++;
-                    //     }
-                    //     carsInstances[i].transform.Rotate(0,rot_angles[index],0,Space.World);
-                    // }
-                    // catch {}
 
                     carsInstances[i].name = step.cars[i].id.ToString();
                     ids[i] = step.cars[i].id;
