@@ -4,11 +4,6 @@ import random
 import math
 
 def move(agent):
-
-    # Get head position
-    curr_x, curr_y = agent.pos
-    curr_pos = [curr_x, curr_y]
-
     will_ignore = False
 
     if isinstance(agent, Ambulance):
@@ -17,7 +12,7 @@ def move(agent):
         if agent.crazy_timer <= 0: # we are out of patience
             if agent.status == 1:
                 agent.status = 2
-                agent.crazy_timer = random.randrange(10, 20)
+                agent.crazy_timer = random.randrange(30, 50)
 
             elif agent.status == 2:
                 will_ignore = True
@@ -47,9 +42,12 @@ def move(agent):
                      agent.model.curr_cars -= 1
                 return
 
-
     # 0 is normal, 1 is pressured, 2 is desesperated, 3 is ambulance
     if agent.status == 0:
+
+        # Get head position
+        curr_x, curr_y = agent.pos
+        curr_pos = [curr_x, curr_y]
 
         possible_steps = agent.model.grid.get_neighborhood(
             agent.pos, moore=True, include_center=True
@@ -116,15 +114,19 @@ def move(agent):
             if aux < min_val:
                 best = new_point
                 min_val = aux
-        if (len(best) > 1):
-            agent.model.grid.move_agent(agent, tuple(e for e in best))
 
         if best == curr_pos: # if did not move
             agent.waiting_time += 1
+        else:
+            agent.model.grid.move_agent(agent, tuple(e for e in best))
 
     elif agent.status == 1:
 
         for i in range(agent.velocity):
+
+            # Get head position
+            curr_x, curr_y = agent.pos
+            curr_pos = [curr_x, curr_y]
 
             possible_steps = agent.model.grid.get_neighborhood(
                 agent.pos, moore=True, include_center=True
@@ -195,16 +197,20 @@ def move(agent):
                 if aux < min_val:
                     best = new_point
                     min_val = aux
-            if (len(best) > 1):
-                agent.model.grid.move_agent(agent, tuple(e for e in best))
 
             if best == curr_pos: # if did not move
                 agent.waiting_time += 1
+            else:
+                agent.model.grid.move_agent(agent, tuple(e for e in best))
 
     # STATUS 2
     elif agent.status == 2:
 
         for i in range(agent.velocity):
+
+            # Get head position
+            curr_x, curr_y = agent.pos
+            curr_pos = [curr_x, curr_y]
 
             possible_steps = agent.model.grid.get_neighborhood(
                 agent.pos, moore=True, include_center=True
@@ -284,16 +290,21 @@ def move(agent):
                 if aux < min_val:
                     best = new_point
                     min_val = aux
-            if (len(best) > 1):
-                agent.model.grid.move_agent(agent, tuple(e for e in best))
+
 
             if best == curr_pos: # if did not move
                 agent.waiting_time += 1
+            else:
+                agent.model.grid.move_agent(agent, tuple(e for e in best))
 
     # MOVING AMBULANCE
     elif agent.status == 3: # is ambulance
 
         for i in range(4):
+
+            # Get head position
+            curr_x, curr_y = agent.pos
+            curr_pos = [curr_x, curr_y]
 
             # Move ambulance tail to next position
             possible_steps = agent.model.grid.get_neighborhood(
@@ -365,15 +376,17 @@ def move(agent):
                 if aux < min_val:
                     best = new_point
                     min_val = aux
-            if (len(best) > 1):
-                agent.model.grid.move_agent(agent, tuple(e for e in best))
 
-            if best != curr_pos: # if did move
-                # Move ambulance tail to head
-                tail_inst = agent.tail # instance of tail
-                agent.model.grid.move_agent(tail_inst, tuple(e for e in curr_pos))
-            else: # did not move
+
+            if best == curr_pos: # if did not move
                 agent.waiting_time += 1
+            else:
+                tail_inst = agent.tail # instance of tail
+                agent.model.grid.move_agent(agent, tuple(e for e in best))
+                agent.model.grid.move_agent(agent.tail, tuple(e for e in curr_pos))
+
+                print(f"Move head from position {curr_pos} to next position {best}")
+                print(f"Move tail from position {tail_inst.pos} to prior head position {curr_pos}")
 
 
 # Some useful methods that are not dependent of an agent
@@ -451,8 +464,6 @@ class Ambulance(mesa.Agent): # head
                 self.model.vh_scheduler.remove(self)
                 self.model.grid.remove_agent(self)
                 self.model.curr_cars -= 1
-
-                print("Added one to succesfull trips")
                 self.model.succesfull += 1
                 return
 
@@ -495,7 +506,6 @@ class Car(mesa.Agent):
                 self.model.vh_scheduler.remove(self)
                 self.model.grid.remove_agent(self)
                 self.model.curr_cars -= 1
-                print("Added one to succesfull trips")
                 self.model.succesfull += 1
                 return
 
@@ -1113,20 +1123,27 @@ class IntersectionModel(mesa.Model):
 
         elif self.vel_cycle is True:
 
-            if self.time == 30:
+            if self.time == 15:
                 # Set current traffic light in green to yellow
                 self.yellow_light = True
                 self.tl_scheduler.step() # move vehicles
                 self.vh_scheduler.step() # move vehicles
                 self.time += 1
 
-            elif self.time == 50: # max time
+            elif self.time == 25: # max time
 
                 # Do while intersection is not empty
                 int_empty = self.check_inter_empty()
 
                 if int_empty is True:
-                    self.prio.pop(0)
+
+                    if len(self.prio) == 1:
+                        self.time = 0
+                        self.vel_cycle = False
+                        self.yellow_light = False
+                        return
+                    else:
+                        self.prio.pop(0)
 
                     if self.prio == []:
                         self.time = 0
