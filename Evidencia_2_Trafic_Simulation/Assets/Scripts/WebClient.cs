@@ -11,7 +11,6 @@ public struct CarInfo
     public int id;
     public float[] pos;
     public string name;
-    public bool crashed;
 }
 [Serializable]
 public struct TrafficLights
@@ -24,6 +23,7 @@ struct Step
 {
     public CarInfo[] cars;
     public TrafficLights[] tf;
+    public int[][] crashes;
 }
 
 public class WebClient : MonoBehaviour
@@ -40,6 +40,7 @@ public class WebClient : MonoBehaviour
     GameObject[] carsInstances;
     GameObject[] cachedCarsInstances;
     GameObject[] tfInstances;
+    GameObject[] explotionInstances;
 
     Step step;
     int[] ids;
@@ -245,6 +246,7 @@ public class WebClient : MonoBehaviour
     {
         STLs = new GameObject[][] {STL1, STL2, STL3, STL4};
         carsInstances = new GameObject[0];
+        explotionInstances= new GameObject[0];
         rot_angles = new float[0];
         #if UNITY_EDITOR
         StartCoroutine(SendData());
@@ -297,6 +299,7 @@ public class WebClient : MonoBehaviour
                         Destroy(carsInstances[i], 0.0f);
                     }
                 }
+
                 cachedCarsInstances = (GameObject[])carsInstances.Clone();
                 carsInstances = new GameObject[step.cars.Length];
                 car_types = new int[step.cars.Length];
@@ -347,18 +350,26 @@ public class WebClient : MonoBehaviour
                         }
                     }
 
-                    if (step.cars[i].crashed)
-                    {
-                        // TODO PLAY AN INSTANTIATE EFFECT
-                        // pos : Vector3
-                        ExSound.Play(0);
-                        Instantiate(BOOM, pos, new Quaternion(0,0,0,1));
-                        
-                    }
-
                     carsInstances[i].name = step.cars[i].id.ToString();
                     ids[i] = step.cars[i].id;
                 }
+
+                // Delete explosions
+                foreach (GameObject explotion in explotionInstances)
+                {
+                    Destroy(explotion);
+                }
+                if (step.crashes != null)
+                {
+                    explotionInstances = new GameObject[step.crashes.Length];
+                    foreach (int[] pos in step.crashes)
+                    {
+                        Debug.Log("Explosion at " + pos[0] + ", " + pos[1]);
+                        GameObject explotion = Instantiate(BOOM, new Vector3 (pos[0], 0.5f, pos[1]) * scale, new Quaternion(0,0,0,1));
+                        Destroy(explotion);
+                    }
+                }
+
                 firstStep = false;
                 #if UNITY_EDITOR
                 StartCoroutine(SendData());

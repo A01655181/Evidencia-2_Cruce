@@ -16,6 +16,8 @@ def root():
     response = model.step()
     while (response == None):
         response = model.step()
+    if (len(response["crashes"]) > 0):
+        print(response["crashes"])
     return jsonify(response)
 
 if __name__ == '__main__':
