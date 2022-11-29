@@ -56,6 +56,9 @@ public class WebClient : MonoBehaviour
     public float scale = 2.0f;
     public float fps;
 
+    public GameObject BOOM;
+    public AudioSource ExSound;
+
     int index_by_id(int id)
     {
         for (int i = 0; i < ids.Length; i++)
@@ -348,6 +351,9 @@ public class WebClient : MonoBehaviour
                     {
                         // TODO PLAY AN INSTANTIATE EFFECT
                         // pos : Vector3
+                        ExSound.Play(0);
+                        Instantiate(BOOM, pos, new Quaternion(0,0,0,1));
+                        
                     }
 
                     carsInstances[i].name = step.cars[i].id.ToString();
