@@ -32,10 +32,12 @@ def move(agent):
 
             for agent_to_del in del_arr:
                 if isinstance(agent_to_del, Ambulance) or isinstance(agent_to_del, Car):
+                    agent.crashed = True
                     agent.model.vh_scheduler.remove(agent_to_del)
                     agent.model.grid.remove_agent(agent_to_del)
                     agent.model.curr_cars -= 1
                 else:
+                     agent_to_del.head.crashed = True
                      agent.model.grid.remove_agent(agent_to_del.head)
                      agent.model.vh_scheduler.remove(agent_to_del.head)
                      agent.model.grid.remove_agent(agent_to_del)
@@ -447,6 +449,8 @@ class Ambulance(mesa.Agent): # head
         self.final_des = []
         self.tail = tail
         self.waiting_time = 0
+        
+        self.crashed = False
 
 
     def step(self):
@@ -493,6 +497,8 @@ class Car(mesa.Agent):
 
         self.crazy_timer = 0
         self.waiting_time = 0
+        
+        self.crashed = False
 
     def step(self):
         des_x, des_y = self.pos
@@ -755,7 +761,7 @@ class IntersectionModel(mesa.Model):
     def get_data(self):
         data = {}
 
-        data["cars"] = [ {"pos":[int(agent.pos[0]), int(agent.pos[1])], "name": "Car" if isinstance(agent, Car) else "Ambulance", "id" : agent.unique_id} for agent in self.vh_scheduler.agents]
+        data["cars"] = [ {"pos":[int(agent.pos[0]), int(agent.pos[1])], "name": "Car" if isinstance(agent, Car) else "Ambulance", "crashed":agent.crashed, "id" : agent.unique_id} for agent in self.vh_scheduler.agents]
 
         data["tf"] = [
             {"pos": [int(agent.pos[0]), int(agent.pos[1])], "status":agent.status}

@@ -340,7 +340,14 @@ public class WebClient : MonoBehaviour
                         if (!remained)
                         {
                             carsInstances[i] = GameObject.Instantiate(ambPrefab, pos, new Quaternion(0,0,0,1));
+                            carsInstances[i].SetActive(true);
                         }
+                    }
+
+                    if (step.cars[i].crashed)
+                    {
+                        // TODO PLAY AN INSTANTIATE EFFECT
+                        // pos : Vector3
                     }
 
                     carsInstances[i].name = step.cars[i].id.ToString();
