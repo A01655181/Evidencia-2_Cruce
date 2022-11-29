@@ -124,7 +124,7 @@ def move(agent):
 
         for i in range(agent.velocity):
 
-            # Get head position
+            # get head position
             curr_x, curr_y = agent.pos
             curr_pos = [curr_x, curr_y]
 
