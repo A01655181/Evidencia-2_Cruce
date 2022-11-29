@@ -11,6 +11,7 @@ public struct CarInfo
     public int id;
     public float[] pos;
     public string name;
+    public bool crashed;
 }
 [Serializable]
 public struct TrafficLights
@@ -31,6 +32,7 @@ public class WebClient : MonoBehaviour
     public GameObject[] carPrefabs;
     public GameObject ambPrefab;
     GameObject[] carsInstances;
+    GameObject[] cachedCarsInstances;
     GameObject[] tfInstances;
 
     Step step;
@@ -100,6 +102,18 @@ public class WebClient : MonoBehaviour
         return res;
     }
 
+    bool carRemains(GameObject car)
+    {
+        for (int i = 0; i < step.cars.Length; i++)
+        {
+            if (step.cars[i].id == int.Parse(car.name))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // IEnumerator - yield return
     IEnumerator SendData()
     {
@@ -125,6 +139,7 @@ public class WebClient : MonoBehaviour
             }
             else
             {
+                Debug.Log(www.downloadHandler.text);
                 step = JsonUtility.FromJson<Step>(www.downloadHandler.text);
                 bool remain_still = true;
                 // Debug.Log(step.cars.Length);
@@ -161,6 +176,7 @@ public class WebClient : MonoBehaviour
                         // Assign new rotations
                         if (moveVects[i].magnitude == 0)
                         {
+                            // carsInstances[i].Ge
                             try
                             {
                                 for (int j = 0; j < cached_ids.Length; j++)
@@ -236,8 +252,12 @@ public class WebClient : MonoBehaviour
                     cached_ids[i] = int.Parse(carsInstances[i].name);
                     cached_car_types[i] = car_types[i];
                     // Debug.Log("ID:" + cached_ids[i] + "| Rotation" + cached_rot_angles[i]);
-                    Destroy(carsInstances[i], 0.0f);
+                    if (!carRemains(carsInstances[i]))
+                    {
+                        Destroy(carsInstances[i], 0.0f);
+                    }
                 }
+                cachedCarsInstances = (GameObject[])carsInstances.Clone();
                 carsInstances = new GameObject[step.cars.Length];
                 car_types = new int[step.cars.Length];
                 ids = new int[step.cars.Length];
@@ -248,21 +268,50 @@ public class WebClient : MonoBehaviour
                     // Assigning rotation
                     if (step.cars[i].name == "Car")
                     {
-                        int car_type = (int)UnityEngine.Random.Range(0, carPrefabs.Length - 0.1f);
-                        for (int j = 0; j < cached_ids.Length; j++)
+                        // for (int j = 0; j < cached_ids.Length; j++)
+                        // {
+                        //     if (cached_ids[j] == step.cars[i].id)
+                        //     {
+                        //         car_type = cached_car_types[j];
+                        //     }
+                        // }
+                        // car_types[i] = car_type;
+                        // Debug.Log(car_type);
+
+                        bool remained = false;
+                        for (int j = 0; j < cachedCarsInstances.Length; j++)
                         {
-                            if (cached_ids[j] == step.cars[i].id)
+                            if (int.Parse(cachedCarsInstances[j].name) == step.cars[i].id)
                             {
-                                car_type = cached_car_types[j];
+                                remained = true;
+                                carsInstances[i] = cachedCarsInstances[j];
+                                carsInstances[i].transform.SetPositionAndRotation(pos,new Quaternion(0,0,0,1));
+                                break;
                             }
                         }
-                        car_types[i] = car_type;
-                        Debug.Log(car_type);
-                        carsInstances[i] = GameObject.Instantiate(carPrefabs[car_type], pos, new Quaternion(0,0,0,1));
+                        if (!remained)
+                        {
+                            int car_type = (int)UnityEngine.Random.Range(0, carPrefabs.Length - 0.1f);
+                            carsInstances[i] = GameObject.Instantiate(carPrefabs[car_type], pos, new Quaternion(0,0,0,1));
+                        }
                     }
                     else
                     {
-                        carsInstances[i] = GameObject.Instantiate(ambPrefab, pos, new Quaternion(0,0,0,1));
+                        bool remained = false;
+                        for (int j = 0; j < cachedCarsInstances.Length; j++)
+                        {
+                            if (int.Parse(cachedCarsInstances[j].name) == step.cars[i].id)
+                            {
+                                remained = true;
+                                carsInstances[i] = cachedCarsInstances[j];
+                                carsInstances[i].transform.SetPositionAndRotation(pos,new Quaternion(0,0,0,1));
+                                break;
+                            }
+                        }
+                        if (!remained)
+                        {
+                            carsInstances[i] = GameObject.Instantiate(ambPrefab, pos, new Quaternion(0,0,0,1));
+                        }
                     }
 
                     try
@@ -295,6 +344,26 @@ public class WebClient : MonoBehaviour
                     carsInstances[i].transform.position += moveVects[i] * Time.deltaTime * fps;
                 }
             }
+        }
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.name == "Dir1")
+        {
+            
+        }
+        else if (other.gameObject.name == "Dir2")
+        {
+            
+        }
+        else if (other.gameObject.name == "Dir3")
+        {
+            
+        }
+        else if (other.gameObject.name == "Dir4")
+        {
+            
         }
     }
 }
