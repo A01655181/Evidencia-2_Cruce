@@ -4,7 +4,7 @@ import json, logging, os, atexit
 from Models import normal, inter_model, traffic, vel
 
 app = Flask(__name__, static_url_path='')
-model = inter_model.IntersectionModel(40)
+model = normal.IntersectionModel(40)
 
 
 # On IBM Cloud Cloud Foundry, get the port number from the environment variable PORT

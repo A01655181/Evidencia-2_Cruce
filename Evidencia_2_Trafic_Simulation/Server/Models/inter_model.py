@@ -302,7 +302,7 @@ def move(agent):
     # MOVING AMBULANCE
     elif agent.status == 3: # is ambulance
 
-        for i in range(4):
+        for i in range(3):
 
             # Get head position
             curr_x, curr_y = agent.pos
