@@ -176,7 +176,7 @@ public class WebClient : MonoBehaviour
                         // Assign new rotations
                         if (moveVects[i].magnitude == 0)
                         {
-                            // carsInstances[i].Ge
+                            // carsInstances[i]
                             try
                             {
                                 for (int j = 0; j < cached_ids.Length; j++)
@@ -351,19 +351,21 @@ public class WebClient : MonoBehaviour
     {
         if (other.gameObject.name == "Dir1")
         {
-            
+            Vector3 rot = new Vector3(0,180,0);
         }
         else if (other.gameObject.name == "Dir2")
         {
+            Vector3 rot = new Vector3(0,0,0);
             
         }
         else if (other.gameObject.name == "Dir3")
         {
-            
+            Vector3 rot = new Vector3(0,90,0);
         }
         else if (other.gameObject.name == "Dir4")
         {
-            
+            Vector3 rot = new Vector3(0,270,0);
         }
+        
     }
 }

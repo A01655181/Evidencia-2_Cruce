@@ -4,7 +4,8 @@ import json, logging, os, atexit
 from Models import normal, inter_model, traffic, vel
 
 app = Flask(__name__, static_url_path='')
-model = traffic.IntersectionModel(40)
+model = inter_model.IntersectionModel(40)
+
 
 # On IBM Cloud Cloud Foundry, get the port number from the environment variable PORT
 # When running this app on the local machine, default the port to 8000
@@ -13,6 +14,7 @@ port = int(os.getenv('PORT', 8000))
 @app.route('/')
 def root():
     response = model.step()
+    print(response)
     return jsonify(response)
 
 if __name__ == '__main__':
