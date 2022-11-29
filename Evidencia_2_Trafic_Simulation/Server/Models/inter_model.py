@@ -23,25 +23,32 @@ def move(agent):
     if len(check_crash) > 2: # there are more than one agent in the same cell
             # Another object in the same cell
 
+        print(check_crash)
+
         for obj in check_crash:
             if isinstance(obj, Car) or isinstance(obj, Ambulance) or isinstance(obj, AmbulanceTail):
                 del_arr.append(obj)
 
+        print(del_arr)
         if len(del_arr) > 1:
+            agent.model.crashes.append(agent.pos)
             agent.model.crashes_num += 1
 
             for agent_to_del in del_arr:
-                if isinstance(agent_to_del, Ambulance) or isinstance(agent_to_del, Car):
-                    agent.crashed = True
+                if isinstance(agent_to_del, Car):
                     agent.model.vh_scheduler.remove(agent_to_del)
                     agent.model.grid.remove_agent(agent_to_del)
                     agent.model.curr_cars -= 1
+                elif isinstance(agent_to_del, Ambulance):
+                    agent.model.vh_scheduler.remove(agent_to_del)
+                    agent.model.grid.remove_agent(agent_to_del)
+                    agent.model.grid.remove_agent(agent_to_del.tail)
+                    agent.model.curr_cars -= 1
                 else:
-                     agent_to_del.head.crashed = True
-                     agent.model.grid.remove_agent(agent_to_del.head)
-                     agent.model.vh_scheduler.remove(agent_to_del.head)
-                     agent.model.grid.remove_agent(agent_to_del)
-                     agent.model.curr_cars -= 1
+                    agent.model.grid.remove_agent(agent_to_del.head)
+                    agent.model.vh_scheduler.remove(agent_to_del.head)
+                    agent.model.grid.remove_agent(agent_to_del)
+                    agent.model.curr_cars -= 1
                 return
 
     # 0 is normal, 1 is pressured, 2 is desesperated, 3 is ambulance
@@ -450,8 +457,6 @@ class Ambulance(mesa.Agent): # head
         self.tail = tail
         self.waiting_time = 0
 
-        self.crashed = False
-
 
     def step(self):
         # Check for self if another object is in the sane cell
@@ -497,8 +502,6 @@ class Car(mesa.Agent):
         self.crazy_timer = 0
         self.waiting_time = 0
 
-        self.crashed = False
-
     def step(self):
         des_x, des_y = self.pos
         curr_pos = [des_x, des_y]
@@ -542,6 +545,8 @@ class IntersectionModel(mesa.Model):
         # Vars for data
         self.crashes_num = 0
         self.succesfull = 0
+
+        self.crashes = []
 
         # Sidewalks:
         x_val = np.union1d(np.array([i for i in range(18)]), np.array([i for i in range(24, 50)]))
@@ -760,11 +765,13 @@ class IntersectionModel(mesa.Model):
     def get_data(self):
         data = {}
 
-        data["cars"] = [ {"pos":[int(agent.pos[0]), int(agent.pos[1])], "name": "Car" if isinstance(agent, Car) else "Ambulance", "crashed":agent.crashed, "id" : agent.unique_id} for agent in self.vh_scheduler.agents]
+        data["cars"] = [ {"pos":[int(agent.pos[0]), int(agent.pos[1])], "name": "Car" if isinstance(agent, Car) else "Ambulance", "id" : agent.unique_id} for agent in self.vh_scheduler.agents]
 
         data["tf"] = [
             {"pos": [int(agent.pos[0]), int(agent.pos[1])], "status":agent.status}
             for agent in self.tl_scheduler.agents]
+
+        data["crashes"] = self.crashes;
 
         if data is None:
             exit(0)
@@ -1092,6 +1099,7 @@ class IntersectionModel(mesa.Model):
         # if self.debug is True:
         #     print(f"The max number of cars is {self.max_cars}")
         #     print(f"The current number of cars is {self.curr_cars}")
+        self.crashes = []
 
         if self.curr_cars < self.max_cars:
             self.spawnVehicles()
@@ -1183,7 +1191,9 @@ class IntersectionModel(mesa.Model):
                 self.vh_scheduler.step()
 
         self.data.collect(self)
+
         return self.get_data()
+
 
     @staticmethod
     def average_waiting_time(model):
