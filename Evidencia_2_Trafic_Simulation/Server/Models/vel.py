@@ -125,7 +125,7 @@ def move(agent):
         for i in range(agent.velocity):
 
             # Get head position
-            cu
+            curr_x, curr_y = agent.pos
             curr_pos = [curr_x, curr_y]
 
             possible_steps = agent.model.grid.get_neighborhood(
@@ -384,6 +384,8 @@ def move(agent):
                 tail_inst = agent.tail # instance of tail
                 agent.model.grid.move_agent(agent, tuple(e for e in best))
                 agent.model.grid.move_agent(agent.tail, tuple(e for e in curr_pos))
+
+# END MOVE METHOD
 
 
 # Some useful methods that are not dependent of an agent
