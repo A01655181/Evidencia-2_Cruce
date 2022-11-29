@@ -2,10 +2,10 @@ from mesa.visualization.modules import CanvasGrid
 from mesa.visualization.ModularVisualization import ModularServer
 from mesa.visualization.UserParam import UserSettableParameter
 
-# from inter_model import *
+from inter_model import *
 # from normal import *
 # from traffic import *
-from vel import *
+# from vel import *
 
 simulation_params = {
         "max_cars_num":UserSettableParameter(
