@@ -387,9 +387,6 @@ def move(agent):
                 agent.model.grid.move_agent(agent, tuple(e for e in best))
                 agent.model.grid.move_agent(agent.tail, tuple(e for e in curr_pos))
 
-                print(f"Move head from position {curr_pos} to next position {best}")
-                print(f"Move tail from position {tail_inst.pos} to prior head position {curr_pos}")
-
 
 # Some useful methods that are not dependent of an agent
 def get_distance(p, q):
@@ -561,7 +558,7 @@ class IntersectionModel(mesa.Model):
 
         # Creating the traffic lights agents
         tl_one_x = [17]
-        tl_one_y = [25, 26, 27]
+        tl_one_y = [22, 23, 24]
 
         for x in tl_one_x:
             for y in tl_one_y:
@@ -571,7 +568,7 @@ class IntersectionModel(mesa.Model):
                 self.unique_ids += 1
 
         tl_two_x = [24]
-        tl_two_y = [22, 23, 24]
+        tl_two_y = [25, 26, 27]
 
         for x in tl_two_x:
             for y in tl_two_y:
@@ -580,7 +577,7 @@ class IntersectionModel(mesa.Model):
                 self.grid.place_agent(agent, (x, y))
                 self.unique_ids += 1
 
-        tl_three_x = [18, 19, 20]
+        tl_three_x = [21, 22, 23]
         tl_three_y = [21]
 
         for x in tl_three_x:
@@ -590,7 +587,7 @@ class IntersectionModel(mesa.Model):
                 self.grid.place_agent(agent, (x, y))
                 self.unique_ids += 1
 
-        tl_four_x = [21, 22, 23]
+        tl_four_x = [18, 19, 20]
         tl_four_y = [28]
 
         for x in tl_four_x:
@@ -601,7 +598,7 @@ class IntersectionModel(mesa.Model):
                 self.unique_ids += 1
 
         """ CREATING STATIC AGENTS FOR TESTING BEHAVIOR OR DEBUGGING"""
-        self.spawn = [
+        self.dispawn = [
                     [21, 49], # up-one
                     [22, 49], # up-one
                     [23, 49], # up-one
@@ -619,7 +616,7 @@ class IntersectionModel(mesa.Model):
                     [49, 24], # right
                 ]
 
-        self.dispawn = [
+        self.spawn = [
                     [18, 49], # up
                     [19, 49], # up
                     [20, 49], # up
@@ -768,6 +765,9 @@ class IntersectionModel(mesa.Model):
         data["tf"] = [
             {"pos": [int(agent.pos[0]), int(agent.pos[1])], "status":agent.status}
             for agent in self.vh_scheduler.agents]
+
+        if data is None:
+            exit(0)
 
         return data
 

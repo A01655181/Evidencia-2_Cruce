@@ -555,7 +555,7 @@ class IntersectionModel(mesa.Model):
 
         # Creating the traffic lights agents
         tl_one_x = [17]
-        tl_one_y = [25, 26, 27]
+        tl_one_y = [22, 23, 24]
 
         for x in tl_one_x:
             for y in tl_one_y:
@@ -565,7 +565,7 @@ class IntersectionModel(mesa.Model):
                 self.unique_ids += 1
 
         tl_two_x = [24]
-        tl_two_y = [22, 23, 24]
+        tl_two_y = [25, 26, 27]
 
         for x in tl_two_x:
             for y in tl_two_y:
@@ -574,7 +574,7 @@ class IntersectionModel(mesa.Model):
                 self.grid.place_agent(agent, (x, y))
                 self.unique_ids += 1
 
-        tl_three_x = [18, 19, 20]
+        tl_three_x = [21, 22, 23]
         tl_three_y = [21]
 
         for x in tl_three_x:
@@ -584,7 +584,7 @@ class IntersectionModel(mesa.Model):
                 self.grid.place_agent(agent, (x, y))
                 self.unique_ids += 1
 
-        tl_four_x = [21, 22, 23]
+        tl_four_x = [18, 19, 20]
         tl_four_y = [28]
 
         for x in tl_four_x:
@@ -595,7 +595,7 @@ class IntersectionModel(mesa.Model):
                 self.unique_ids += 1
 
         """ CREATING STATIC AGENTS FOR TESTING BEHAVIOR OR DEBUGGING"""
-        self.spawn = [
+        self.dispawn = [
                     [21, 49], # up-one
                     [22, 49], # up-one
                     [23, 49], # up-one
@@ -613,7 +613,7 @@ class IntersectionModel(mesa.Model):
                     [49, 24], # right
                 ]
 
-        self.dispawn = [
+        self.spawn = [
                     [18, 49], # up
                     [19, 49], # up
                     [20, 49], # up
