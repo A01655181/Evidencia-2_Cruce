@@ -17,7 +17,7 @@ public struct CarInfo
 public struct TrafficLights
 {
     public float[] pos;
-    public string status;
+    public int status;
 }
 [Serializable]
 struct Step
@@ -31,6 +31,12 @@ public class WebClient : MonoBehaviour
     public static WebClient instance;
     public GameObject[] carPrefabs;
     public GameObject ambPrefab;
+    GameObject[][] STLs;
+    public GameObject[] STL1;
+    public GameObject[] STL2;
+    public GameObject[] STL3;
+    public GameObject[] STL4;
+
     GameObject[] carsInstances;
     GameObject[] cachedCarsInstances;
     GameObject[] tfInstances;
@@ -139,7 +145,7 @@ public class WebClient : MonoBehaviour
             }
             else
             {
-                Debug.Log(www.downloadHandler.text);
+                // Debug.Log(www.downloadHandler.text);
                 step = JsonUtility.FromJson<Step>(www.downloadHandler.text);
                 bool remain_still = true;
                 // Debug.Log(step.cars.Length);
@@ -174,24 +180,7 @@ public class WebClient : MonoBehaviour
                             remain_still = false;
                         }
                         // Assign new rotations
-                        if (moveVects[i].magnitude == 0)
-                        {
-                            // carsInstances[i]
-                            try
-                            {
-                                for (int j = 0; j < cached_ids.Length; j++)
-                                {
-                                    if (cached_ids[j] == ids[i])
-                                    {
-                                        rot_angles[i] = cached_rot_angles[j];
-                                        carsInstances[i].transform.rotation = new Quaternion(0,0,0,1);
-                                        carsInstances[i].transform.Rotate(new Vector3(0,cached_rot_angles[j],0), Space.World);
-                                    }
-                                }
-                            }
-                            catch {}
-                        }
-                        else
+                        if (moveVects[i].magnitude != 0)
                         {
                             rot_angles[i] = rotation(moveVects[i]);
                             carsInstances[i].transform.rotation = new Quaternion(0,0,0,1);
@@ -223,6 +212,7 @@ public class WebClient : MonoBehaviour
     // Start is called before the first frame update
     async void Start()
     {
+        STLs = new GameObject[][] {STL1, STL2, STL3, STL4};
         carsInstances = new GameObject[0];
         rot_angles = new float[0];
         #if UNITY_EDITOR
@@ -238,6 +228,25 @@ public class WebClient : MonoBehaviour
             // Assign positions and get movement vectors
             if (firstStep || chrono > 1 / fps)
             {
+                for (int i = 0; i < 4; i++)
+                {
+                    foreach (GameObject STL in STLs[i])
+                    {
+                        STL.SetActive(false);
+                    }
+                    if (step.tf[i * 3].status == 1)
+                    {
+                        STLs[i][2].SetActive(true);
+                    }
+                    else if (step.tf[i * 3].status == 2)
+                    {
+                        STLs[i][1].SetActive(true);
+                    }
+                    else if (step.tf[i * 3].status == 3)
+                    {
+                        STLs[i][0].SetActive(true);
+                    }
+                }
                 // for (int i = 0; i < step.tf.Length; i++)
                 // {
                 //     Debug.Log("Semaforo" + i + "- Status" + step.tf[i].status);
@@ -268,16 +277,6 @@ public class WebClient : MonoBehaviour
                     // Assigning rotation
                     if (step.cars[i].name == "Car")
                     {
-                        // for (int j = 0; j < cached_ids.Length; j++)
-                        // {
-                        //     if (cached_ids[j] == step.cars[i].id)
-                        //     {
-                        //         car_type = cached_car_types[j];
-                        //     }
-                        // }
-                        // car_types[i] = car_type;
-                        // Debug.Log(car_type);
-
                         bool remained = false;
                         for (int j = 0; j < cachedCarsInstances.Length; j++)
                         {
@@ -285,7 +284,8 @@ public class WebClient : MonoBehaviour
                             {
                                 remained = true;
                                 carsInstances[i] = cachedCarsInstances[j];
-                                carsInstances[i].transform.SetPositionAndRotation(pos,new Quaternion(0,0,0,1));
+                                // carsInstances[i].transform.SetPositionAndRotation(pos,new Quaternion(0,0,0,1));
+                                carsInstances[i].transform.position = pos;
                                 break;
                             }
                         }
@@ -304,7 +304,8 @@ public class WebClient : MonoBehaviour
                             {
                                 remained = true;
                                 carsInstances[i] = cachedCarsInstances[j];
-                                carsInstances[i].transform.SetPositionAndRotation(pos,new Quaternion(0,0,0,1));
+                                // carsInstances[i].transform.SetPositionAndRotation(pos,new Quaternion(0,0,0,1));
+                                carsInstances[i].transform.position = pos;
                                 break;
                             }
                         }
@@ -314,18 +315,18 @@ public class WebClient : MonoBehaviour
                         }
                     }
 
-                    try
-                    {
-                        int index = 0;
-                        foreach (int id in cached_ids)
-                        {
-                            if (id == step.cars[i].id)
-                                break;
-                            index++;
-                        }
-                        carsInstances[i].transform.Rotate(0,rot_angles[index],0,Space.World);
-                    }
-                    catch {}
+                    // try
+                    // {
+                    //     int index = 0;
+                    //     foreach (int id in cached_ids)
+                    //     {
+                    //         if (id == step.cars[i].id)
+                    //             break;
+                    //         index++;
+                    //     }
+                    //     carsInstances[i].transform.Rotate(0,rot_angles[index],0,Space.World);
+                    // }
+                    // catch {}
 
                     carsInstances[i].name = step.cars[i].id.ToString();
                     ids[i] = step.cars[i].id;
@@ -345,27 +346,5 @@ public class WebClient : MonoBehaviour
                 }
             }
         }
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.gameObject.name == "Dir1")
-        {
-            Vector3 rot = new Vector3(0,180,0);
-        }
-        else if (other.gameObject.name == "Dir2")
-        {
-            Vector3 rot = new Vector3(0,0,0);
-            
-        }
-        else if (other.gameObject.name == "Dir3")
-        {
-            Vector3 rot = new Vector3(0,90,0);
-        }
-        else if (other.gameObject.name == "Dir4")
-        {
-            Vector3 rot = new Vector3(0,270,0);
-        }
-        
     }
 }

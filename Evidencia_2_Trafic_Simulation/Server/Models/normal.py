@@ -760,7 +760,7 @@ class IntersectionModel(mesa.Model):
 
         data["tf"] = [
             {"pos": [int(agent.pos[0]), int(agent.pos[1])], "status":agent.status}
-            for agent in self.vh_scheduler.agents]
+            for agent in self.tl_scheduler.agents]
 
         return data
 

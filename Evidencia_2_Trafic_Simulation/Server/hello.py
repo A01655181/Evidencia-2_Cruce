@@ -14,7 +14,8 @@ port = int(os.getenv('PORT', 8000))
 @app.route('/')
 def root():
     response = model.step()
-    print(response)
+    while (response == None):
+        response = model.step()
     return jsonify(response)
 
 if __name__ == '__main__':
