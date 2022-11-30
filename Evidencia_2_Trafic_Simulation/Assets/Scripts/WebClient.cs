@@ -19,11 +19,17 @@ public struct TrafficLights
     public int status;
 }
 [Serializable]
+struct pos
+{
+    public int x;
+    public int y;
+}
+[Serializable]
 struct Step
 {
     public CarInfo[] cars;
     public TrafficLights[] tf;
-    public int[][] crashes;
+    public pos[] crashes;
 }
 
 public class WebClient : MonoBehaviour
@@ -357,16 +363,18 @@ public class WebClient : MonoBehaviour
                 // Delete explosions
                 foreach (GameObject explotion in explotionInstances)
                 {
-                    Destroy(explotion);
+                    Destroy(explotion, 0.0f);
                 }
                 if (step.crashes != null)
                 {
                     explotionInstances = new GameObject[step.crashes.Length];
-                    foreach (int[] pos in step.crashes)
+                    int i = 0;
+                    foreach (pos coord in step.crashes)
                     {
-                        Debug.Log("Explosion at " + pos[0] + ", " + pos[1]);
-                        GameObject explotion = Instantiate(BOOM, new Vector3 (pos[0], 0.5f, pos[1]) * scale, new Quaternion(0,0,0,1));
-                        Destroy(explotion);
+                        Debug.Log("Explosion at " + coord.x + ", " + coord.y);
+                        explotionInstances[i] = Instantiate(BOOM, new Vector3 (coord.x, 0.5f, coord.y) * scale, new Quaternion(0,0,0,1));
+                        ExSound.Play(0);
+                        i++;
                     }
                 }
 

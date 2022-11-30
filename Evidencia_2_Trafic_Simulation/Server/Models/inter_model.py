@@ -31,7 +31,7 @@ def move(agent):
 
         print(del_arr)
         if len(del_arr) > 1:
-            agent.model.crashes.append(agent.pos)
+            agent.model.crashes.append({"x": agent.pos[0], "y": agent.pos[1]})
             agent.model.crashes_num += 1
 
             for agent_to_del in del_arr:
